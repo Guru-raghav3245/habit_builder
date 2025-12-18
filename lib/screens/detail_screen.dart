@@ -30,32 +30,85 @@ class _DetailScreenState extends State<DetailScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.habit.name),
-        centerTitle: true,
-        bottom: TabBar(
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              expandedHeight: 150.0,
+              floating: false,
+              pinned: true,
+              stretch: true,
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+              flexibleSpace: FlexibleSpaceBar(
+                title: Text(
+                  widget.habit.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                centerTitle: true,
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.deepPurple, Colors.deepPurple.shade800],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverAppBarDelegate(
+                TabBar(
+                  controller: _tabController,
+                  labelColor: Colors.deepPurple,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: Colors.deepPurple,
+                  indicatorWeight: 3,
+                  tabs: const [
+                    Tab(icon: Icon(Icons.settings_outlined), text: 'Settings'),
+                    Tab(icon: Icon(Icons.insights_rounded), text: 'Progress'),
+                  ],
+                ),
+              ),
+            ),
+          ];
+        },
+        body: TabBarView(
           controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.edit), text: 'Edit'),
-            Tab(icon: Icon(Icons.bar_chart), text: 'Progress'),
+          children: [
+            // Embedded version of the edit screen
+            AddEditHabitScreen(habitToEdit: widget.habit),
+            ProgressScreen(habit: widget.habit),
           ],
-          labelColor: Colors.deepPurple,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Colors.deepPurple,
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // Edit tab
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: AddEditHabitScreen(habitToEdit: widget.habit),
-          ),
-          // Progress tab
-          ProgressScreen(habit: widget.habit),
-        ],
       ),
     );
   }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverAppBarDelegate(this._tabBar);
+
+  final TabBar _tabBar;
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
 }

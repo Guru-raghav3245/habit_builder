@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_builder/models/habit.dart';
 import 'package:habit_builder/providers/habits_provider.dart';
-import 'package:habit_builder/services/notification_service.dart';
 
 class AddEditHabitScreen extends ConsumerStatefulWidget {
   final Habit? habitToEdit;
+  final bool isEmbedded; // Added flag for UI improvement
 
-  const AddEditHabitScreen({super.key, this.habitToEdit});
+  const AddEditHabitScreen({
+    super.key, 
+    this.habitToEdit, 
+    this.isEmbedded = false,
+  });
 
   @override
   ConsumerState<AddEditHabitScreen> createState() => _AddEditHabitScreenState();
@@ -44,12 +48,8 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           timePickerTheme: TimePickerThemeData(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             hourMinuteColor: Colors.deepPurple.shade50,
             hourMinuteTextColor: Colors.deepPurple,
-            dayPeriodColor: Colors.deepPurple.shade100,
-            dayPeriodTextColor: Colors.deepPurple,
-            dialBackgroundColor: Colors.deepPurple.shade50,
             dialHandColor: Colors.deepPurple,
           ),
         ),
@@ -61,11 +61,8 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     }
   }
 
-  void _selectDuration(int minutes) => setState(() => _selectedDuration = minutes);
-
   Future<void> _saveHabit() async {
     if (!_formKey.currentState!.validate()) return;
-
     final notifier = ref.read(habitsProvider.notifier);
 
     if (widget.habitToEdit == null) {
@@ -86,11 +83,14 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     }
 
     if (mounted) {
-      Navigator.pop(context);
+      // Only pop if we are in the "Add" screen (not embedded)
+      if (!widget.isEmbedded) Navigator.pop(context);
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(widget.habitToEdit == null ? 'Habit added!' : 'Habit updated!'),
+          content: Text(widget.habitToEdit == null ? 'Habit added!' : 'Changes saved!'),
           backgroundColor: Colors.green.shade600,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -100,108 +100,102 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   Widget build(BuildContext context) {
     final isEditing = widget.habitToEdit != null;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(isEditing ? 'Edit Habit' : 'New Daily Habit'), centerTitle: true),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'Habit name',
-                  hintText: 'e.g., Morning Meditation',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                  prefixIcon: const Icon(Icons.task_alt),
-                ),
-                validator: (v) => v?.trim().isEmpty ?? true ? 'Please enter a habit name' : null,
+    // Core UI content extracted for reuse
+    Widget content = SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextFormField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: 'Habit name',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                prefixIcon: const Icon(Icons.task_alt),
               ),
-              const SizedBox(height: 32),
-              Text('Start time', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              InkWell(
-                onTap: _pickTime,
+              validator: (v) => v?.trim().isEmpty ?? true ? 'Please enter a habit name' : null,
+            ),
+            const SizedBox(height: 24),
+            const Text('Schedule', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            ListTile(
+              onTap: _pickTime,
+              shape: RoundedRectangleBorder(
+                side: BorderSide(color: Colors.grey.shade300),
                 borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                  decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(16)),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.access_time, color: Colors.deepPurple),
-                      const SizedBox(width: 16),
-                      Text(_selectedTime.format(context), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-                      const Spacer(),
-                      const Icon(Icons.arrow_forward_ios, size: 18),
-                    ],
-                  ),
+              ),
+              leading: const Icon(Icons.access_time, color: Colors.deepPurple),
+              title: const Text('Start Time'),
+              trailing: Text(
+                _selectedTime.format(context),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text('Duration', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              children: [
+                ...durationPresets.map((min) => ChoiceChip(
+                  label: Text('$min min'),
+                  selected: _selectedDuration == min,
+                  onSelected: (_) => setState(() => _selectedDuration = min),
+                )),
+                ChoiceChip(
+                  label: const Text('Custom'),
+                  selected: !durationPresets.contains(_selectedDuration),
+                  onSelected: (_) async {
+                    final int? custom = await showDialog<int>(
+                      context: context,
+                      builder: (_) => _CustomDurationDialog(initial: _selectedDuration),
+                    );
+                    if (custom != null) setState(() => _selectedDuration = custom);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SwitchListTile(
+              title: const Text('Daily reminder', style: TextStyle(fontWeight: FontWeight.bold)),
+              value: _reminderEnabled,
+              onChanged: (v) => setState(() => _reminderEnabled = v),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _saveHabit,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  backgroundColor: Colors.deepPurple,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: Text(
+                  isEditing ? 'Update Settings' : 'Create Habit',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
-              const SizedBox(height: 32),
-              Text('Duration', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  ...durationPresets.map((min) => FilterChip(
-                        label: Text('$min min'),
-                        selected: _selectedDuration == min,
-                        onSelected: (_) => _selectDuration(min),
-                        selectedColor: Colors.deepPurple,
-                        checkmarkColor: Colors.white,
-                      )),
-                  FilterChip(
-                    label: const Text('Custom'),
-                    selected: !durationPresets.contains(_selectedDuration),
-                    onSelected: (_) async {
-                      final int? custom = await showDialog<int>(
-                        context: context,
-                        builder: (_) => _CustomDurationDialog(initial: _selectedDuration),
-                      );
-                      if (custom != null && custom > 0) setState(() => _selectedDuration = custom);
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Center(child: Text('$_selectedDuration minutes', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple))),
-              const SizedBox(height: 32),
-              SwitchListTile(
-                title: const Text('Daily reminder', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                subtitle: Text('Will remind you daily at ${_selectedTime.format(context)}'),
-                value: _reminderEnabled,
-                activeColor: Colors.deepPurple,
-                onChanged: (v) => setState(() => _reminderEnabled = v),
-              ),
-              const SizedBox(height: 16),
-              Center(
-                child: OutlinedButton.icon(
-                  onPressed: NotificationService.testAlarm,
-                  icon: const Icon(Icons.notifications_active),
-                  label: const Text('Test alarm sound'),
-                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
-                ),
-              ),
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _saveHabit,
-                  style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), backgroundColor: Colors.deepPurple),
-                  child: Text(isEditing ? 'Save Changes' : 'Add Habit', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+
+    // If embedded in DetailScreen, return just the content. 
+    // Otherwise, return a full Scaffold for the "Add New Habit" flow.
+    return widget.isEmbedded 
+        ? content 
+        : Scaffold(
+            appBar: AppBar(title: const Text('New Habit'), centerTitle: true),
+            body: content,
+          );
   }
 }
 
+// Keep the existing _CustomDurationDialog here...
 class _CustomDurationDialog extends StatefulWidget {
   final int initial;
   const _CustomDurationDialog({required this.initial});
@@ -223,7 +217,7 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Custom duration (minutes)'),
-      content: TextField(controller: _controller, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: 'e.g., 45'), autofocus: true),
+      content: TextField(controller: _controller, keyboardType: TextInputType.number, autofocus: true),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
         TextButton(
