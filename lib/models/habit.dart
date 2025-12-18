@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 class Habit {
-  final String id;                    // Unique identifier
-  String name;                        // e.g., "Meditation"
-  TimeOfDay startTime;                // e.g., 9:00 AM
-  int durationMinutes;                // e.g., 20
-  bool reminderEnabled;               // true = daily notification
-  List<DateTime> completedDates;      // List of completed days (midnight normalized)
+  final String id;
+  String name;
+  TimeOfDay startTime;
+  int durationMinutes;
+  bool reminderEnabled;
+  List<DateTime> completedDates;
 
   Habit({
     required this.id,
@@ -17,18 +17,15 @@ class Habit {
     List<DateTime>? completedDates,
   }) : completedDates = completedDates ?? [];
 
-  // Helper: Check if completed today (using device local date)
   bool get isCompletedToday {
     final today = DateTime.now();
     final todayNormalized = DateTime(today.year, today.month, today.day);
-
     return completedDates.any((date) =>
         date.year == todayNormalized.year &&
         date.month == todayNormalized.month &&
         date.day == todayNormalized.day);
   }
 
-  // Helper: Calculate current streak
   int get currentStreak {
     if (completedDates.isEmpty) return 0;
 
@@ -36,7 +33,7 @@ class Habit {
         .map((d) => DateTime(d.year, d.month, d.day))
         .toSet()
         .toList()
-      ..sort((a, b) => b.compareTo(a)); // newest first
+      ..sort((a, b) => b.compareTo(a));
 
     int streak = 0;
     DateTime? expectedDate = DateTime.now();
@@ -49,14 +46,13 @@ class Habit {
         streak++;
         expectedDate = expectedDate.subtract(const Duration(days: 1));
       } else if (normalizedDate.isBefore(normalizedExpected.subtract(const Duration(days: 1)))) {
-        break; // Gap found
+        break;
       }
     }
 
     return streak;
   }
 
-  // Helper: Calculate longest streak
   int get longestStreak {
     if (completedDates.isEmpty) return 0;
 
@@ -81,7 +77,6 @@ class Habit {
     return maxStreak;
   }
 
-  // Convert to JSON for SharedPreferences
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -91,12 +86,11 @@ class Habit {
       'durationMinutes': durationMinutes,
       'reminderEnabled': reminderEnabled,
       'completedDates': completedDates
-          .map((d) => d.toIso8601String().substring(0, 10)) // Store as YYYY-MM-DD
+          .map((d) => d.toIso8601String().substring(0, 10))
           .toList(),
     };
   }
 
-  // Create from JSON
   factory Habit.fromJson(Map<String, dynamic> json) {
     return Habit(
       id: json['id'] as String,
@@ -113,7 +107,6 @@ class Habit {
     );
   }
 
-  // For updating (creates a copy with new values)
   Habit copyWith({
     String? name,
     TimeOfDay? startTime,

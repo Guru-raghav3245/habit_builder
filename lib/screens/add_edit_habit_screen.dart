@@ -5,7 +5,7 @@ import 'package:habit_builder/providers/habits_provider.dart';
 import 'package:habit_builder/services/notification_service.dart';
 
 class AddEditHabitScreen extends ConsumerStatefulWidget {
-  final Habit? habitToEdit; // null = add new, non-null = edit existing
+  final Habit? habitToEdit;
 
   const AddEditHabitScreen({super.key, this.habitToEdit});
 
@@ -41,35 +41,27 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _selectedTime,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            timePickerTheme: TimePickerThemeData(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              hourMinuteColor: Colors.deepPurple.shade50,
-              hourMinuteTextColor: Colors.deepPurple,
-              dayPeriodColor: Colors.deepPurple.shade100,
-              dayPeriodTextColor: Colors.deepPurple,
-              dialBackgroundColor: Colors.deepPurple.shade50,
-              dialHandColor: Colors.deepPurple,
-            ),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          timePickerTheme: TimePickerThemeData(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            hourMinuteColor: Colors.deepPurple.shade50,
+            hourMinuteTextColor: Colors.deepPurple,
+            dayPeriodColor: Colors.deepPurple.shade100,
+            dayPeriodTextColor: Colors.deepPurple,
+            dialBackgroundColor: Colors.deepPurple.shade50,
+            dialHandColor: Colors.deepPurple,
           ),
-          child: child!,
-        );
-      },
+        ),
+        child: child!,
+      ),
     );
     if (picked != null && picked != _selectedTime) {
-      setState(() {
-        _selectedTime = picked;
-      });
+      setState(() => _selectedTime = picked);
     }
   }
 
-  void _selectDuration(int minutes) {
-    setState(() {
-      _selectedDuration = minutes;
-    });
-  }
+  void _selectDuration(int minutes) => setState(() => _selectedDuration = minutes);
 
   Future<void> _saveHabit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -77,7 +69,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     final notifier = ref.read(habitsProvider.notifier);
 
     if (widget.habitToEdit == null) {
-      // Add new habit
       await notifier.addHabit(
         name: _nameController.text.trim(),
         startTime: _selectedTime,
@@ -85,14 +76,13 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         reminderEnabled: _reminderEnabled,
       );
     } else {
-      // Update existing
-      final updatedHabit = widget.habitToEdit!.copyWith(
+      final updated = widget.habitToEdit!.copyWith(
         name: _nameController.text.trim(),
         startTime: _selectedTime,
         durationMinutes: _selectedDuration,
         reminderEnabled: _reminderEnabled,
       );
-      await notifier.updateHabit(updatedHabit);
+      await notifier.updateHabit(updated);
     }
 
     if (mounted) {
@@ -111,11 +101,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     final isEditing = widget.habitToEdit != null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditing ? 'Edit Habit' : 'New Daily Habit'),
-        centerTitle: true,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: Text(isEditing ? 'Edit Habit' : 'New Daily Habit'), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
@@ -123,7 +109,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Habit Name
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
@@ -132,39 +117,22 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                   prefixIcon: const Icon(Icons.task_alt),
                 ),
-                textCapitalization: TextCapitalization.sentences,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a habit name';
-                  }
-                  return null;
-                },
+                validator: (v) => v?.trim().isEmpty ?? true ? 'Please enter a habit name' : null,
               ),
               const SizedBox(height: 32),
-
-              // Start Time
-              Text(
-                'Start time',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
+              Text('Start time', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               InkWell(
                 onTap: _pickTime,
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade400),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                  decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(16)),
                   child: Row(
                     children: [
                       const Icon(Icons.access_time, color: Colors.deepPurple),
                       const SizedBox(width: 16),
-                      Text(
-                        _selectedTime.format(context),
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                      ),
+                      Text(_selectedTime.format(context), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
                       const Spacer(),
                       const Icon(Icons.arrow_forward_ios, size: 18),
                     ],
@@ -172,12 +140,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-
-              // Duration
-              Text(
-                'Duration',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
+              Text('Duration', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 12,
@@ -196,41 +159,24 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                     onSelected: (_) async {
                       final int? custom = await showDialog<int>(
                         context: context,
-                        builder: (ctx) => _CustomDurationDialog(initial: _selectedDuration),
+                        builder: (_) => _CustomDurationDialog(initial: _selectedDuration),
                       );
-                      if (custom != null && custom > 0) {
-                        setState(() {
-                          _selectedDuration = custom;
-                        });
-                      }
+                      if (custom != null && custom > 0) setState(() => _selectedDuration = custom);
                     },
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              Center(
-                child: Text(
-                  '$_selectedDuration minutes',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
-                ),
-              ),
+              Center(child: Text('$_selectedDuration minutes', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple))),
               const SizedBox(height: 32),
-
-              // Reminder Switch
               SwitchListTile(
                 title: const Text('Daily reminder', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 subtitle: Text('Will remind you daily at ${_selectedTime.format(context)}'),
                 value: _reminderEnabled,
                 activeColor: Colors.deepPurple,
-                onChanged: (value) {
-                  setState(() {
-                    _reminderEnabled = value;
-                  });
-                },
+                onChanged: (v) => setState(() => _reminderEnabled = v),
               ),
               const SizedBox(height: 16),
-
-              // Test Alarm Button
               Center(
                 child: OutlinedButton.icon(
                   onPressed: NotificationService.testAlarm,
@@ -240,21 +186,12 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-
-              // Save Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _saveHabit,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    backgroundColor: Colors.deepPurple,
-                  ),
-                  child: Text(
-                    isEditing ? 'Save Changes' : 'Add Habit',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
+                  style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), backgroundColor: Colors.deepPurple),
+                  child: Text(isEditing ? 'Save Changes' : 'Add Habit', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
               ),
             ],
@@ -265,7 +202,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   }
 }
 
-// Helper dialog for custom duration
 class _CustomDurationDialog extends StatefulWidget {
   final int initial;
   const _CustomDurationDialog({required this.initial});
@@ -287,20 +223,13 @@ class _CustomDurationDialogState extends State<_CustomDurationDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Custom duration (minutes)'),
-      content: TextField(
-        controller: _controller,
-        keyboardType: TextInputType.number,
-        decoration: const InputDecoration(hintText: 'e.g., 45'),
-        autofocus: true,
-      ),
+      content: TextField(controller: _controller, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: 'e.g., 45'), autofocus: true),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
         TextButton(
           onPressed: () {
             final int? value = int.tryParse(_controller.text);
-            if (value != null && value > 0) {
-              Navigator.pop(context, value);
-            }
+            if (value != null && value > 0) Navigator.pop(context, value);
           },
           child: const Text('OK'),
         ),

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_builder/screens/home_screen.dart';
+import 'package:habit_builder/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // NotificationService.init() will be added in Phase 6
+  await NotificationService.init(); // Critical for notifications + timezone
 
   runApp(
     const ProviderScope(
