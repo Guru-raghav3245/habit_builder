@@ -10,7 +10,13 @@ class HomeScreen extends ConsumerWidget {
 
   String _formatTime(TimeOfDay time) {
     final now = DateTime.now();
-    final dateTime = DateTime(now.year, now.month, now.day, time.hour, time.minute);
+    final dateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    );
     return DateFormat('h:mm a').format(dateTime);
   }
 
@@ -31,7 +37,10 @@ class HomeScreen extends ConsumerWidget {
               flexibleSpace: FlexibleSpaceBar(
                 title: const Text(
                   'My Daily Habits',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
                 centerTitle: true,
                 background: Container(
@@ -76,7 +85,9 @@ class HomeScreen extends ConsumerWidget {
                     child: InkWell(
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
+                        MaterialPageRoute(
+                          builder: (_) => DetailScreen(habit: habit),
+                        ),
                       ),
                       borderRadius: BorderRadius.circular(24),
                       child: Card(
@@ -84,11 +95,16 @@ class HomeScreen extends ConsumerWidget {
                         shadowColor: Colors.deepPurple.withOpacity(0.2),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
-                          side: isDoneToday 
-                              ? BorderSide(color: Colors.green.shade200, width: 2)
+                          side: isDoneToday
+                              ? BorderSide(
+                                  color: Colors.green.shade200,
+                                  width: 2,
+                                )
                               : BorderSide.none,
                         ),
-                        color: isDoneToday ? Colors.green.shade50 : Colors.white,
+                        color: isDoneToday
+                            ? Colors.green.shade50
+                            : Colors.white,
                         child: Padding(
                           padding: const EdgeInsets.all(20),
                           child: Column(
@@ -98,31 +114,48 @@ class HomeScreen extends ConsumerWidget {
                                   Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: isDoneToday ? Colors.green.shade100 : Colors.deepPurple.shade50,
+                                      color: isDoneToday
+                                          ? Colors.green.shade100
+                                          : Colors.deepPurple.shade50,
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Icon(
-                                      isDoneToday ? Icons.check_circle : Icons.timer_outlined,
-                                      color: isDoneToday ? Colors.green.shade700 : Colors.deepPurple,
+                                      isDoneToday
+                                          ? Icons.check_circle
+                                          : Icons.timer_outlined,
+                                      color: isDoneToday
+                                          ? Colors.green.shade700
+                                          : Colors.deepPurple,
                                     ),
                                   ),
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           habit.name,
-                                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                         const SizedBox(height: 4),
                                         Row(
                                           children: [
-                                            Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
+                                            Icon(
+                                              Icons.access_time,
+                                              size: 14,
+                                              color: Colors.grey[600],
+                                            ),
                                             const SizedBox(width: 4),
                                             Text(
                                               '${_formatTime(habit.startTime)} • ${habit.durationMinutes}m',
-                                              style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500),
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontWeight: FontWeight.w500,
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -131,16 +164,29 @@ class HomeScreen extends ConsumerWidget {
                                   ),
                                   if (streak > 0)
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: Colors.orange.shade100,
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Row(
                                         children: [
-                                          const Icon(Icons.whatshot, size: 16, color: Colors.orange),
+                                          const Icon(
+                                            Icons.whatshot,
+                                            size: 16,
+                                            color: Colors.orange,
+                                          ),
                                           const SizedBox(width: 4),
-                                          Text('$streak', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+                                          Text(
+                                            '$streak',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.orange,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -150,21 +196,70 @@ class HomeScreen extends ConsumerWidget {
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: isDoneToday ? null : () {
-                                    ref.read(habitsProvider.notifier).markDoneToday(habit.id);
-                                  },
+                                  onPressed: isDoneToday
+                                      ? null
+                                      : () {
+                                          ref
+                                              .read(habitsProvider.notifier)
+                                              .markDoneToday(habit.id);
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: const Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.check_circle,
+                                                    color: Colors.white,
+                                                  ),
+                                                  SizedBox(width: 12),
+                                                  Text(
+                                                    'Great! Streak updated 🔥',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              backgroundColor:
+                                                  Colors.green.shade600,
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              duration: const Duration(
+                                                seconds: 2,
+                                              ),
+                                            ),
+                                          );
+                                        },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isDoneToday ? Colors.green.shade600 : Colors.deepPurple,
-                                    disabledBackgroundColor: Colors.green.shade400,
+                                    backgroundColor: isDoneToday
+                                        ? Colors.green.shade600
+                                        : Colors.deepPurple,
+                                    disabledBackgroundColor:
+                                        Colors.green.shade400,
                                     foregroundColor: Colors.white,
-                                    disabledForegroundColor: Colors.white,
+                                    disabledForegroundColor: Colors.white
+                                        .withOpacity(0.8),
                                     elevation: 0,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
                                   ),
                                   child: Text(
-                                    isDoneToday ? 'Completed for Today' : 'Mark as Done',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    isDoneToday
+                                        ? 'Completed for Today ✓'
+                                        : 'Mark as Done',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -182,11 +277,17 @@ class HomeScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEditHabitScreen()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
+          );
         },
         backgroundColor: Colors.deepPurple,
         icon: const Icon(Icons.add, size: 24),
-        label: const Text('Add Habit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        label: const Text(
+          'Add Habit',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
@@ -205,7 +306,11 @@ class HomeScreen extends ConsumerWidget {
                 color: Colors.deepPurple.shade50,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.auto_graph_rounded, size: 80, color: Colors.deepPurple.shade200),
+              child: Icon(
+                Icons.auto_graph_rounded,
+                size: 80,
+                color: Colors.deepPurple.shade200,
+              ),
             ),
             const SizedBox(height: 32),
             const Text(
@@ -216,7 +321,11 @@ class HomeScreen extends ConsumerWidget {
             Text(
               'Your journey to a better you starts with a single habit. Tap the button below to begin.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey[600], height: 1.5),
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                height: 1.5,
+              ),
             ),
           ],
         ),

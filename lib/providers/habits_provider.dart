@@ -20,8 +20,12 @@ class HabitsNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
     state = const AsyncValue.loading();
     try {
       final habits = await HabitStorage.loadHabits();
-      // PERFORMANCE: UI state is updated immediately. 
-      // Background services like notifications are handled lazily by the OS.
+
+      // Reschedule all reminders on launch (critical for reliability after reboot/kill)
+      for (int i = 0; i < habits.length; i++) {
+        await NotificationService.scheduleDailyReminder(habits[i], i);
+      }
+
       state = AsyncValue.data(habits);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
