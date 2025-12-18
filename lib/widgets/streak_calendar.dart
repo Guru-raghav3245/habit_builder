@@ -9,27 +9,31 @@ class StreakCalendar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Convert completedDates to Map<DateTime, int> for the heatmap
+    // Convert completed dates to dataset
     final Map<DateTime, int> datasets = {};
     for (final date in habit.completedDates) {
       final normalized = DateTime(date.year, date.month, date.day);
-      datasets[normalized] = 1; // Any positive value = filled
+      datasets[normalized] = 1;
     }
 
-    return HeatMapCalendar(
-      datasets: datasets,
-      colorsets: const {
-        1: Colors.green,
-      },
-      defaultColor: Colors.grey[200],
-      textColor: Colors.black87,
-      showColorTip: false,
-      borderRadius: 12,
-      size: 40,
-      fontSize: 14,
-      margin: const EdgeInsets.all(4),
-      weekTextColor: Colors.deepPurple,
-      monthFontSize: 18,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: HeatMapCalendar(
+        datasets: datasets,
+        colorsets: const {
+          1: Colors.green,
+        },
+        defaultColor: Colors.grey[300],
+        textColor: Colors.black87,
+        showColorTip: false,
+        size: 36,         // Reduced slightly to help fit more screens
+        fontSize: 12,
+        margin: const EdgeInsets.all(3),
+        borderRadius: 8,
+        weekTextColor: Colors.deepPurple,
+        monthFontSize: 16,
+      ),
     );
   }
 }

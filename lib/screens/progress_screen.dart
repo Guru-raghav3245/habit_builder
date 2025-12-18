@@ -23,13 +23,19 @@ class ProgressScreen extends StatelessWidget {
               Expanded(
                 child: Card(
                   elevation: 6,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   color: Colors.orange.shade50,
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       children: [
-                        Icon(Icons.whatshot, size: 48, color: Colors.orange[700]),
+                        Icon(
+                          Icons.whatshot,
+                          size: 48,
+                          color: Colors.orange[700],
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           '$currentStreak',
@@ -41,11 +47,17 @@ class ProgressScreen extends StatelessWidget {
                         ),
                         Text(
                           'Current streak',
-                          style: TextStyle(fontSize: 16, color: Colors.orange[700]),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.orange[700],
+                          ),
                         ),
                         Text(
                           'day${currentStreak == 1 ? "" : "s"}',
-                          style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
                         ),
                       ],
                     ),
@@ -56,13 +68,19 @@ class ProgressScreen extends StatelessWidget {
               Expanded(
                 child: Card(
                   elevation: 6,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   color: Colors.green.shade50,
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       children: [
-                        Icon(Icons.emoji_events, size: 48, color: Colors.green[700]),
+                        Icon(
+                          Icons.emoji_events,
+                          size: 48,
+                          color: Colors.green[700],
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           '$longestStreak',
@@ -74,11 +92,17 @@ class ProgressScreen extends StatelessWidget {
                         ),
                         Text(
                           'Best streak',
-                          style: TextStyle(fontSize: 16, color: Colors.green[700]),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.green[700],
+                          ),
                         ),
                         Text(
                           'day${longestStreak == 1 ? "" : "s"}',
-                          style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
                         ),
                       ],
                     ),
@@ -93,19 +117,25 @@ class ProgressScreen extends StatelessWidget {
           Text(
             'Completion History',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple[800],
-                ),
+              fontWeight: FontWeight.bold,
+              color: Colors.deepPurple[800],
+            ),
           ),
           const SizedBox(height: 16),
 
           // Streak Calendar
           Card(
             elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(20),
-              child: StreakCalendar(habit: habit),
+              child: Column(
+                children: [
+                  StreakCalendar(habit: habit),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 24),
