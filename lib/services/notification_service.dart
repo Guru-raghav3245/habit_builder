@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:habit_builder/models/habit.dart';
+import 'dart:io';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
@@ -9,10 +10,11 @@ class NotificationService {
 
   static const String _channelId = 'daily_habits_channel';
   static const String _channelName = 'Daily Habit Reminders';
-  static const String _channelDescription = 'Reminders for your daily habits';
 
   static Future<void> init() async {
+    // Initialize timezone database, but we will use the default local location
     tz.initializeTimeZones();
+    // No external package lookup - just use the environment's default
     tz.setLocalLocation(tz.local);
 
     const AndroidInitializationSettings android = AndroidInitializationSettings(
@@ -25,26 +27,14 @@ class NotificationService {
 
     await _notifications.initialize(settings);
 
-    await _notifications
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.requestNotificationsPermission();
-
-    final AndroidNotificationChannel channel = AndroidNotificationChannel(
-      _channelId,
-      _channelName,
-      description: _channelDescription,
-      importance: Importance.max,
-      playSound: true,
-      enableVibration: true,
-    );
-
-    await _notifications
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(channel);
+    // Request necessary permissions for Android 12+ and 13+
+    if (Platform.isAndroid) {
+      final androidImplementation = _notifications.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      
+      await androidImplementation?.requestNotificationsPermission();
+      await androidImplementation?.requestExactAlarmsPermission();
+    }
   }
 
   static Future<void> scheduleDailyReminder(
@@ -56,9 +46,11 @@ class NotificationService {
       return;
     }
 
-    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime scheduledDate = tz.TZDateTime(
-      tz.local,
+    // Get current device time
+    final now = DateTime.now();
+    
+    // Create a DateTime for today at the habit's start time
+    var scheduledDate = DateTime(
       now.year,
       now.month,
       now.day,
@@ -66,24 +58,26 @@ class NotificationService {
       habit.startTime.minute,
     );
 
+    // If that time has already passed today, schedule for tomorrow
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
+
+    // Convert our local DateTime to TZDateTime for the notification plugin
+    final tzScheduledDate = tz.TZDateTime.from(scheduledDate, tz.local);
 
     await _notifications.zonedSchedule(
       notificationId,
       'Time for ${habit.name}!',
       'Start your ${habit.durationMinutes}-minute session now.',
-      scheduledDate,
-      NotificationDetails(
+      tzScheduledDate,
+      const NotificationDetails(
         android: AndroidNotificationDetails(
           _channelId,
           _channelName,
-          channelDescription: _channelDescription,
           importance: Importance.max,
           priority: Priority.high,
-          playSound: true,
-          enableVibration: true,
+          showWhen: true,
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -99,16 +93,13 @@ class NotificationService {
     await _notifications.show(
       999,
       'Test Alarm',
-      'This is how your daily habit reminder will sound!',
-      NotificationDetails(
+      'This is a test of your device time settings.',
+      const NotificationDetails(
         android: AndroidNotificationDetails(
           _channelId,
           _channelName,
-          channelDescription: _channelDescription,
           importance: Importance.max,
           priority: Priority.high,
-          playSound: true,
-          enableVibration: true,
         ),
       ),
     );

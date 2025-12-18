@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:habit_builder/providers/habits_provider.dart';
 import 'package:habit_builder/screens/add_edit_habit_screen.dart';
+import 'package:habit_builder/screens/detail_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -56,8 +57,13 @@ class HomeScreen extends ConsumerWidget {
 
               return GestureDetector(
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Habit details coming soon!')));
-                },
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => DetailScreen(habit: habit),
+    ),
+  );
+},
                 child: Card(
                   elevation: isDoneToday ? 2 : 6,
                   color: isDoneToday ? Colors.green.shade50 : Theme.of(context).cardColor,

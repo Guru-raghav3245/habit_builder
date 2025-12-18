@@ -6,7 +6,8 @@ import 'package:habit_builder/services/notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await NotificationService.init(); // Critical for notifications + timezone
+  // Initialize notifications with local device time
+  await NotificationService.init();
 
   runApp(
     const ProviderScope(
