@@ -81,13 +81,35 @@ class _DetailScreenState extends State<DetailScreen> with SingleTickerProviderSt
         body: TabBarView(
           controller: _tabController,
           children: [
-            // Embedded version of the edit screen
-            AddEditHabitScreen(habitToEdit: widget.habit),
-            ProgressScreen(habit: widget.habit),
+            _KeepAliveWrapper(
+              child: AddEditHabitScreen(habitToEdit: widget.habit, isEmbedded: true),
+            ),
+            _KeepAliveWrapper(
+              child: ProgressScreen(habit: widget.habit),
+            ),
           ],
         ),
       ),
     );
+  }
+}
+
+class _KeepAliveWrapper extends StatefulWidget {
+  final Widget child;
+  const _KeepAliveWrapper({required this.child});
+
+  @override
+  State<_KeepAliveWrapper> createState() => _KeepAliveWrapperState();
+}
+
+class _KeepAliveWrapperState extends State<_KeepAliveWrapper> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
 

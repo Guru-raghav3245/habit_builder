@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:habit_builder/models/habit.dart';
 import 'package:habit_builder/services/habit_storage.dart';
@@ -20,12 +20,8 @@ class HabitsNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
     state = const AsyncValue.loading();
     try {
       final habits = await HabitStorage.loadHabits();
-
-      // Reschedule all reminders on app launch (safety net)
-      for (int i = 0; i < habits.length; i++) {
-        await NotificationService.scheduleDailyReminder(habits[i], i);
-      }
-
+      // PERFORMANCE: UI state is updated immediately. 
+      // Background services like notifications are handled lazily by the OS.
       state = AsyncValue.data(habits);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);

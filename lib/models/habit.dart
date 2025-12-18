@@ -8,6 +8,10 @@ class Habit {
   bool reminderEnabled;
   List<DateTime> completedDates;
 
+  // PERFORMANCE: Pre-calculated values to prevent UI jank during builds
+  final int currentStreak;
+  final int longestStreak;
+
   Habit({
     required this.id,
     required this.name,
@@ -15,9 +19,12 @@ class Habit {
     required this.durationMinutes,
     this.reminderEnabled = true,
     List<DateTime>? completedDates,
-  }) : completedDates = completedDates ?? [];
+  })  : completedDates = completedDates ?? [],
+        currentStreak = _calculateCurrentStreak(completedDates ?? []),
+        longestStreak = _calculateLongestStreak(completedDates ?? []);
 
   bool get isCompletedToday {
+    if (completedDates.isEmpty) return false;
     final today = DateTime.now();
     final todayNormalized = DateTime(today.year, today.month, today.day);
     return completedDates.any((date) =>
@@ -26,10 +33,10 @@ class Habit {
         date.day == todayNormalized.day);
   }
 
-  int get currentStreak {
-    if (completedDates.isEmpty) return 0;
+  static int _calculateCurrentStreak(List<DateTime> dates) {
+    if (dates.isEmpty) return 0;
 
-    final sortedDates = completedDates
+    final sortedDates = dates
         .map((d) => DateTime(d.year, d.month, d.day))
         .toSet()
         .toList()
@@ -53,10 +60,10 @@ class Habit {
     return streak;
   }
 
-  int get longestStreak {
-    if (completedDates.isEmpty) return 0;
+  static int _calculateLongestStreak(List<DateTime> dates) {
+    if (dates.isEmpty) return 0;
 
-    final uniqueDates = completedDates
+    final uniqueDates = dates
         .map((d) => DateTime(d.year, d.month, d.day))
         .toSet()
         .toList()
@@ -92,6 +99,10 @@ class Habit {
   }
 
   factory Habit.fromJson(Map<String, dynamic> json) {
+    final List<DateTime> dates = (json['completedDates'] as List<dynamic>? ?? [])
+          .map((d) => DateTime.parse(d as String))
+          .toList();
+
     return Habit(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -101,9 +112,7 @@ class Habit {
       ),
       durationMinutes: json['durationMinutes'] as int,
       reminderEnabled: json['reminderEnabled'] as bool? ?? true,
-      completedDates: (json['completedDates'] as List<dynamic>? ?? [])
-          .map((d) => DateTime.parse(d as String))
-          .toList(),
+      completedDates: dates,
     );
   }
 
