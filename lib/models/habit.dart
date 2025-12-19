@@ -19,18 +19,24 @@ class Habit {
     required this.durationMinutes,
     this.reminderEnabled = true,
     List<DateTime>? completedDates,
-  })  : completedDates = completedDates ?? [],
-        currentStreak = _calculateCurrentStreak(completedDates ?? []),
-        longestStreak = _calculateLongestStreak(completedDates ?? []);
+  })  : completedDates = _filterFutureDates(completedDates ?? []),
+        currentStreak = _calculateCurrentStreak(_filterFutureDates(completedDates ?? [])),
+        longestStreak = _calculateLongestStreak(_filterFutureDates(completedDates ?? []));
+
+  // NEW: Automatically removes any dates that are ahead of the current system time
+  static List<DateTime> _filterFutureDates(List<DateTime> dates) {
+    final now = DateTime.now();
+    final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    return dates.where((date) => date.isBefore(todayEnd) || date.isAtSameMomentAs(todayEnd)).toList();
+  }
 
   bool get isCompletedToday {
     if (completedDates.isEmpty) return false;
     final today = DateTime.now();
-    final todayNormalized = DateTime(today.year, today.month, today.day);
     return completedDates.any((date) =>
-        date.year == todayNormalized.year &&
-        date.month == todayNormalized.month &&
-        date.day == todayNormalized.day);
+        date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day);
   }
 
   static int _calculateCurrentStreak(List<DateTime> dates) {
@@ -56,7 +62,6 @@ class Habit {
         break;
       }
     }
-
     return streak;
   }
 
@@ -80,7 +85,6 @@ class Habit {
         current = 1;
       }
     }
-
     return maxStreak;
   }
 
