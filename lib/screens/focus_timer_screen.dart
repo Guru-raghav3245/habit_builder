@@ -1,86 +1,89 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:habit_builder/models/habit.dart';
 
 class FocusTimerScreen extends StatefulWidget {
   final Habit habit;
-  final int initialSeconds;
 
-  const FocusTimerScreen({
-    super.key,
-    required this.habit,
-    required this.initialSeconds,
-  });
+  const FocusTimerScreen({super.key, required this.habit});
 
   @override
   State<FocusTimerScreen> createState() => _FocusTimerScreenState();
 }
 
-class _FocusTimerScreenState extends State<FocusTimerScreen> with TickerProviderStateMixin {
-  late AnimationController _controller;
+class _FocusTimerScreenState extends State<FocusTimerScreen> {
+  late Timer _ticker;
+  late Timer _navigationHideTimer;
   late int _remainingSeconds;
-  bool _isRunning = false;
 
   @override
   void initState() {
     super.initState();
-    _remainingSeconds = widget.initialSeconds;
-    
-    // Safety check for duration
-    final duration = Duration(seconds: _remainingSeconds > 0 ? _remainingSeconds : 1);
-    
-    _controller = AnimationController(
-      vsync: this,
-      duration: duration,
-    )..addListener(() {
-        setState(() {
-          _remainingSeconds = (_controller.duration! * (1 - _controller.value)).inSeconds;
-        });
-      });
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
 
     WakelockPlus.enable();
-    _startTimer();
+    _calculateRemainingTime();
+
+    // Ticker that forces the UI to stay in sync with the actual clock
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      _calculateRemainingTime();
+    });
+
+    // Aggressive navigation bar hiding timer
+    _navigationHideTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+    });
   }
 
-  void _startTimer() {
-    _isRunning = true;
-    _controller.reverse(from: 1.0);
-  }
-
-  void _pauseTimer() {
-    _isRunning = false;
-    _controller.stop();
-  }
-
-  void _showGiveUpDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text('Give Up?', style: TextStyle(color: Colors.white)),
-        content: const Text('Are you sure you want to end this focus session early?', style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Stay Focused', style: TextStyle(color: Colors.green)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context, _remainingSeconds);
-            },
-            child: const Text('Give Up', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+  void _calculateRemainingTime() {
+    final now = DateTime.now();
+    final startTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      widget.habit.startTime.hour,
+      widget.habit.startTime.minute,
     );
+    final endTime = startTime.add(
+      Duration(minutes: widget.habit.durationMinutes),
+    );
+
+    setState(() {
+      if (now.isAfter(endTime)) {
+        _remainingSeconds = 0;
+      } else {
+        _remainingSeconds = endTime.difference(now).inSeconds;
+      }
+    });
+
+    if (_remainingSeconds <= 0) {
+      _exitWithSuccess();
+    }
+  }
+
+  void _exitWithSuccess() {
+    _ticker.cancel();
+    _navigationHideTimer.cancel();
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Session complete! You did it! 🎉'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _ticker.cancel();
+    _navigationHideTimer.cancel();
     WakelockPlus.disable();
+    // Restore the system bars when the user exits focus mode
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
@@ -89,103 +92,84 @@ class _FocusTimerScreenState extends State<FocusTimerScreen> with TickerProvider
     final minutes = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
     final seconds = (_remainingSeconds % 60).toString().padLeft(2, '0');
 
-    // Only auto-pop if the timer actually reached 0 while running.
-    if (_remainingSeconds <= 0 && _isRunning && _controller.value == 0.0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Session complete! You did it! 🎉'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 4),
-            ),
-          );
-        }
-      });
-    }
-
-    return WillPopScope(
-      onWillPop: () async {
-        _pauseTimer();
-        _showGiveUpDialog();
-        return false;
-      },
+    return PopScope(
+      canPop: false,
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Row(
+        body: Column(
+          children: [
+            const SizedBox(height: 100),
+            Text(
+              widget.habit.name.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white38,
+                fontSize: 14,
+                letterSpacing: 6,
+                fontWeight: FontWeight.w300,
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white70, size: 32),
-                      onPressed: () {
-                        _pauseTimer();
-                        _showGiveUpDialog();
-                      },
-                    ),
-                    const Spacer(),
                     Text(
-                      widget.habit.name,
-                      style: const TextStyle(color: Colors.white70, fontSize: 18),
+                      '$minutes:$seconds',
+                      style: const TextStyle(
+                        fontSize: 110,
+                        fontWeight: FontWeight.w100,
+                        color: Colors.white,
+                        letterSpacing: 10,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'FOCUS ACTIVE',
+                      style: TextStyle(
+                        color: Colors.greenAccent,
+                        letterSpacing: 4,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
               ),
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '$minutes:$seconds',
-                        style: const TextStyle(
-                          fontSize: 96,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 8,
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      Text(
-                        _isRunning ? 'Stay focused...' : 'Paused',
-                        style: const TextStyle(fontSize: 24, color: Colors.white70),
-                      ),
-                    ],
+            ),
+            // The ONLY exit point
+            Padding(
+              padding: const EdgeInsets.only(bottom: 60),
+              child: GestureDetector(
+                onLongPress: () {
+                  _ticker.cancel();
+                  _navigationHideTimer.cancel();
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 18,
+                    horizontal: 45,
                   ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(40),
-                child: GestureDetector(
-                  onLongPress: () {
-                    _pauseTimer();
-                    _showGiveUpDialog();
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: Colors.red, width: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(40),
+                    border: Border.all(
+                      color: Colors.red.withOpacity(0.3),
+                      width: 1,
                     ),
-                    child: const Text(
-                      'Hold to Give Up',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
+                  ),
+                  child: const Text(
+                    'HOLD TO GIVE UP',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

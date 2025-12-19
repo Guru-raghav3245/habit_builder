@@ -230,23 +230,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                     habit.startTime.hour,
                                     habit.startTime.minute,
                                   );
-                                  final endTime = startTime.add(Duration(minutes: habit.durationMinutes));
+                                  final endTime = startTime.add(
+                                    Duration(minutes: habit.durationMinutes),
+                                  );
 
                                   int remainingSeconds;
                                   if (now.isBefore(startTime)) {
                                     // Start early? Give full duration.
-                                    remainingSeconds = habit.durationMinutes * 60;
+                                    remainingSeconds =
+                                        habit.durationMinutes * 60;
                                   } else if (now.isAfter(endTime)) {
                                     // Already passed.
                                     remainingSeconds = 0;
                                   } else {
                                     // Currently in progress (e.g., 1:43 PM for 1:41 PM start).
-                                    remainingSeconds = endTime.difference(now).inSeconds;
+                                    remainingSeconds = endTime
+                                        .difference(now)
+                                        .inSeconds;
                                   }
 
                                   if (remainingSeconds <= 0) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Focus window for this habit has already passed.')),
+                                      const SnackBar(
+                                        content: Text(
+                                          'Focus window for this habit has already passed.',
+                                        ),
+                                      ),
                                     );
                                     return;
                                   }
@@ -254,29 +263,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                   final remaining = await Navigator.push<int>(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => FocusTimerScreen(
-                                        habit: habit,
-                                        initialSeconds: remainingSeconds,
-                                      ),
+                                      builder: (_) =>
+                                          FocusTimerScreen(habit: habit),
                                       fullscreenDialog: true,
                                     ),
                                   );
 
-                                  if (remaining != null && remaining > 0 && mounted) {
+                                  if (remaining != null &&
+                                      remaining > 0 &&
+                                      mounted) {
                                     final resume = await showDialog<bool>(
                                       context: context,
                                       builder: (ctx) => AlertDialog(
-                                        title: const Text('Resume Focus Session?'),
+                                        title: const Text(
+                                          'Resume Focus Session?',
+                                        ),
                                         content: Text(
                                           'You have ${remaining ~/ 60} minute${remaining ~/ 60 == 1 ? "" : "s"} left. Continue?',
                                         ),
                                         actions: [
                                           TextButton(
-                                            onPressed: () => Navigator.pop(ctx, false),
+                                            onPressed: () =>
+                                                Navigator.pop(ctx, false),
                                             child: const Text('No'),
                                           ),
                                           TextButton(
-                                            onPressed: () => Navigator.pop(ctx, true),
+                                            onPressed: () =>
+                                                Navigator.pop(ctx, true),
                                             child: const Text('Yes'),
                                           ),
                                         ],
@@ -287,10 +300,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (_) => FocusTimerScreen(
-                                            habit: habit,
-                                            initialSeconds: remaining,
-                                          ),
+                                          builder: (_) =>
+                                              FocusTimerScreen(habit: habit),
                                         ),
                                       );
                                     }
