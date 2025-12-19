@@ -31,8 +31,8 @@ class _FocusTimerScreenState extends State<FocusTimerScreen> {
       _calculateRemainingTime();
     });
 
-    // Aggressive navigation bar hiding timer
-    _navigationHideTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
+    // Aggressive navigation bar hiding timer (reduced to 10ms)
+    _navigationHideTimer = Timer.periodic(const Duration(milliseconds: 10), (_) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
     });
   }
@@ -63,6 +63,10 @@ class _FocusTimerScreenState extends State<FocusTimerScreen> {
     }
   }
 
+  void _hideNavigationBar() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+  }
+
   void _exitWithSuccess() {
     _ticker.cancel();
     _navigationHideTimer.cancel();
@@ -82,7 +86,6 @@ class _FocusTimerScreenState extends State<FocusTimerScreen> {
     _ticker.cancel();
     _navigationHideTimer.cancel();
     WakelockPlus.disable();
-    // Restore the system bars when the user exits focus mode
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
@@ -96,80 +99,87 @@ class _FocusTimerScreenState extends State<FocusTimerScreen> {
       canPop: false,
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: Column(
-          children: [
-            const SizedBox(height: 100),
-            Text(
-              widget.habit.name.toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white38,
-                fontSize: 14,
-                letterSpacing: 6,
-                fontWeight: FontWeight.w300,
+        body: GestureDetector(
+          // CRITICAL: Capture ALL gestures including edge swipes
+          behavior: HitTestBehavior.translucent,
+          onTap: _hideNavigationBar,
+          onPanStart: (_) => _hideNavigationBar(),
+          onPanUpdate: (_) => _hideNavigationBar(),
+          onPanEnd: (_) => _hideNavigationBar(),
+          child: Column(
+            children: [
+              const SizedBox(height: 100),
+              Text(
+                widget.habit.name.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white38,
+                  fontSize: 14,
+                  letterSpacing: 6,
+                  fontWeight: FontWeight.w300,
+                ),
               ),
-            ),
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '$minutes:$seconds',
-                      style: const TextStyle(
-                        fontSize: 110,
-                        fontWeight: FontWeight.w100,
-                        color: Colors.white,
-                        letterSpacing: 10,
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '$minutes:$seconds',
+                        style: const TextStyle(
+                          fontSize: 110,
+                          fontWeight: FontWeight.w100,
+                          color: Colors.white,
+                          letterSpacing: 10,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'FOCUS ACTIVE',
+                        style: TextStyle(
+                          color: Colors.greenAccent,
+                          letterSpacing: 4,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 60),
+                child: GestureDetector(
+                  onLongPress: () {
+                    _ticker.cancel();
+                    _navigationHideTimer.cancel();
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 18,
+                      horizontal: 45,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(40),
+                      border: Border.all(
+                        color: Colors.red.withOpacity(0.3),
+                        width: 1,
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'FOCUS ACTIVE',
+                    child: const Text(
+                      'HOLD TO GIVE UP',
                       style: TextStyle(
-                        color: Colors.greenAccent,
-                        letterSpacing: 4,
-                        fontSize: 12,
+                        color: Colors.red,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            // The ONLY exit point
-            Padding(
-              padding: const EdgeInsets.only(bottom: 60),
-              child: GestureDetector(
-                onLongPress: () {
-                  _ticker.cancel();
-                  _navigationHideTimer.cancel();
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 18,
-                    horizontal: 45,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(40),
-                    border: Border.all(
-                      color: Colors.red.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: const Text(
-                    'HOLD TO GIVE UP',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
