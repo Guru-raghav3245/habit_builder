@@ -6,9 +6,9 @@ class Habit {
   TimeOfDay startTime;
   int durationMinutes;
   bool reminderEnabled;
+  bool focusModeEnabled;        // ← NEW: Optional lockdown timer
   List<DateTime> completedDates;
 
-  // PERFORMANCE: Pre-calculated values to prevent UI jank during builds
   final int currentStreak;
   final int longestStreak;
 
@@ -18,43 +18,26 @@ class Habit {
     required this.startTime,
     required this.durationMinutes,
     this.reminderEnabled = true,
+    this.focusModeEnabled = false,
     List<DateTime>? completedDates,
   })  : completedDates = _filterFutureDates(completedDates ?? []),
         currentStreak = _calculateCurrentStreak(_filterFutureDates(completedDates ?? [])),
         longestStreak = _calculateLongestStreak(_filterFutureDates(completedDates ?? []));
 
-  // NEW: Automatically removes any dates that are ahead of the current system time
   static List<DateTime> _filterFutureDates(List<DateTime> dates) {
     final now = DateTime.now();
     final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
     return dates.where((date) => date.isBefore(todayEnd) || date.isAtSameMomentAs(todayEnd)).toList();
   }
 
-  bool get isCompletedToday {
-    if (completedDates.isEmpty) return false;
-    final today = DateTime.now();
-    return completedDates.any((date) =>
-        date.year == today.year &&
-        date.month == today.month &&
-        date.day == today.day);
-  }
-
   static int _calculateCurrentStreak(List<DateTime> dates) {
     if (dates.isEmpty) return 0;
-
-    final sortedDates = dates
-        .map((d) => DateTime(d.year, d.month, d.day))
-        .toSet()
-        .toList()
-      ..sort((a, b) => b.compareTo(a));
-
+    final sortedDates = dates.map((d) => DateTime(d.year, d.month, d.day)).toSet().toList()..sort((a, b) => b.compareTo(a));
     int streak = 0;
     DateTime? expectedDate = DateTime.now();
-
     for (final date in sortedDates) {
       final normalizedDate = DateTime(date.year, date.month, date.day);
       final normalizedExpected = DateTime(expectedDate!.year, expectedDate.month, expectedDate.day);
-
       if (normalizedDate.isAtSameMomentAs(normalizedExpected)) {
         streak++;
         expectedDate = expectedDate.subtract(const Duration(days: 1));
@@ -67,16 +50,9 @@ class Habit {
 
   static int _calculateLongestStreak(List<DateTime> dates) {
     if (dates.isEmpty) return 0;
-
-    final uniqueDates = dates
-        .map((d) => DateTime(d.year, d.month, d.day))
-        .toSet()
-        .toList()
-      ..sort();
-
+    final uniqueDates = dates.map((d) => DateTime(d.year, d.month, d.day)).toSet().toList()..sort();
     int maxStreak = 1;
     int current = 1;
-
     for (int i = 1; i < uniqueDates.length; i++) {
       if (uniqueDates[i].difference(uniqueDates[i - 1]).inDays == 1) {
         current++;
@@ -88,6 +64,13 @@ class Habit {
     return maxStreak;
   }
 
+  bool get isCompletedToday {
+    if (completedDates.isEmpty) return false;
+    final today = DateTime.now();
+    return completedDates.any((date) =>
+        date.year == today.year && date.month == today.month && date.day == today.day);
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -96,6 +79,7 @@ class Habit {
       'startTimeMinute': startTime.minute,
       'durationMinutes': durationMinutes,
       'reminderEnabled': reminderEnabled,
+      'focusModeEnabled': focusModeEnabled,
       'completedDates': completedDates
           .map((d) => d.toIso8601String().substring(0, 10))
           .toList(),
@@ -104,8 +88,8 @@ class Habit {
 
   factory Habit.fromJson(Map<String, dynamic> json) {
     final List<DateTime> dates = (json['completedDates'] as List<dynamic>? ?? [])
-          .map((d) => DateTime.parse(d as String))
-          .toList();
+        .map((d) => DateTime.parse(d as String))
+        .toList();
 
     return Habit(
       id: json['id'] as String,
@@ -116,6 +100,7 @@ class Habit {
       ),
       durationMinutes: json['durationMinutes'] as int,
       reminderEnabled: json['reminderEnabled'] as bool? ?? true,
+      focusModeEnabled: json['focusModeEnabled'] as bool? ?? false,
       completedDates: dates,
     );
   }
@@ -125,6 +110,7 @@ class Habit {
     TimeOfDay? startTime,
     int? durationMinutes,
     bool? reminderEnabled,
+    bool? focusModeEnabled,
     List<DateTime>? completedDates,
   }) {
     return Habit(
@@ -133,6 +119,7 @@ class Habit {
       startTime: startTime ?? this.startTime,
       durationMinutes: durationMinutes ?? this.durationMinutes,
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+      focusModeEnabled: focusModeEnabled ?? this.focusModeEnabled,
       completedDates: completedDates ?? this.completedDates,
     );
   }
