@@ -6,7 +6,7 @@ class Habit {
   TimeOfDay startTime;
   int durationMinutes;
   bool reminderEnabled;
-  bool focusModeEnabled;        // ← NEW: Optional lockdown timer
+  bool focusModeEnabled;
   List<DateTime> completedDates;
 
   final int currentStreak;
@@ -23,6 +23,14 @@ class Habit {
   })  : completedDates = _filterFutureDates(completedDates ?? []),
         currentStreak = _calculateCurrentStreak(_filterFutureDates(completedDates ?? [])),
         longestStreak = _calculateLongestStreak(_filterFutureDates(completedDates ?? []));
+
+  // NEW: Checks if the current time is within the habit's window
+  bool get isActiveNow {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day, startTime.hour, startTime.minute);
+    final todayEnd = todayStart.add(Duration(minutes: durationMinutes));
+    return now.isAfter(todayStart) && now.isBefore(todayEnd);
+  }
 
   static List<DateTime> _filterFutureDates(List<DateTime> dates) {
     final now = DateTime.now();

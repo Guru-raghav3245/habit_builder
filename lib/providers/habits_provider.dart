@@ -15,16 +15,26 @@ class HabitsNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
     loadHabits();
   }
 
+  // Helper to sort habits by time
+  void _sortAndSetState(List<Habit> habits) {
+    habits.sort((a, b) {
+      if (a.startTime.hour != b.startTime.hour) {
+        return a.startTime.hour.compareTo(b.startTime.hour);
+      }
+      return a.startTime.minute.compareTo(b.startTime.minute);
+    });
+    state = AsyncValue.data(habits);
+  }
+
   Future<void> loadHabits() async {
     try {
       final habits = await HabitStorage.loadHabits();
-      state = AsyncValue.data(habits);
+      _sortAndSetState(habits);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
     }
   }
 
-  // REVERSIBLE STATUS: Toggles the entry for today on or off
   Future<void> toggleDoneToday(String habitId) async {
     final currentHabits = state.value ?? [];
     final index = currentHabits.indexWhere((h) => h.id == habitId);
@@ -37,18 +47,16 @@ class HabitsNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
     List<DateTime> updatedDates = List.from(habit.completedDates);
     
     if (habit.isCompletedToday) {
-      // Remove today's entry (Undo)
       updatedDates.removeWhere((d) => d.year == today.year && d.month == today.month && d.day == today.day);
     } else {
-      // Add today's entry
       updatedDates.add(today);
     }
 
     final updatedHabit = habit.copyWith(completedDates: updatedDates);
-    final updatedHabits = [...currentHabits]..[index] = updatedHabit;
+    final updatedList = [...currentHabits]..[index] = updatedHabit;
     
-    state = AsyncValue.data(updatedHabits);
-    await HabitStorage.saveHabits(updatedHabits);
+    await HabitStorage.saveHabits(updatedList);
+    _sortAndSetState(updatedList);
   }
 
   Future<void> addHabit({
@@ -65,28 +73,27 @@ class HabitsNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
       durationMinutes: durationMinutes,
       reminderEnabled: reminderEnabled,
     );
-    final updatedHabits = [...currentHabits, newHabit];
-    state = AsyncValue.data(updatedHabits);
-    await HabitStorage.saveHabits(updatedHabits);
-    if (reminderEnabled) await NotificationService.scheduleDailyReminder(newHabit, currentHabits.length);
+    final updatedList = [...currentHabits, newHabit];
+    await HabitStorage.saveHabits(updatedList);
+    _sortAndSetState(updatedList);
+    if (reminderEnabled) await NotificationService.scheduleDailyReminder(newHabit, updatedList.length - 1);
   }
 
   Future<void> updateHabit(Habit updatedHabit) async {
     final currentHabits = state.value ?? [];
     final index = currentHabits.indexWhere((h) => h.id == updatedHabit.id);
     if (index == -1) return;
-    final updatedHabits = [...currentHabits]..[index] = updatedHabit;
-    state = AsyncValue.data(updatedHabits);
-    await HabitStorage.saveHabits(updatedHabits);
+    
+    final updatedList = [...currentHabits]..[index] = updatedHabit;
+    await HabitStorage.saveHabits(updatedList);
+    _sortAndSetState(updatedList);
     await NotificationService.scheduleDailyReminder(updatedHabit, index);
   }
 
   Future<void> deleteHabit(String habitId) async {
     final currentHabits = state.value ?? [];
-    final index = currentHabits.indexWhere((h) => h.id == habitId);
-    final updatedHabits = currentHabits.where((h) => h.id != habitId).toList();
-    state = AsyncValue.data(updatedHabits);
-    await HabitStorage.saveHabits(updatedHabits);
-    if (index != -1) await NotificationService.cancelReminder(index);
+    final updatedList = currentHabits.where((h) => h.id != habitId).toList();
+    await HabitStorage.saveHabits(updatedList);
+    _sortAndSetState(updatedList);
   }
 }
