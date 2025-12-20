@@ -1,3 +1,5 @@
+// lib/screens/detail_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:habit_builder/models/habit.dart';
 import 'package:habit_builder/screens/add_edit_habit_screen.dart';
@@ -41,11 +43,18 @@ class _DetailScreenState extends State<DetailScreen> with SingleTickerProviderSt
               backgroundColor: Colors.deepPurple,
               foregroundColor: Colors.white,
               flexibleSpace: FlexibleSpaceBar(
-                title: Text(
-                  widget.habit.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                title: Hero(
+                  tag: 'habit_name_${widget.habit.id}',
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Text(
+                      widget.habit.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 20,
+                      ),
+                    ),
                   ),
                 ),
                 centerTitle: true,

@@ -1,4 +1,7 @@
+// lib/screens/home_screen.dart
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:habit_builder/providers/habits_provider.dart';
@@ -101,114 +104,141 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               itemBuilder: (context, index) {
                 final habit = habits[index];
                 final isDoneToday = habit.isCompletedToday;
-                final isActive =
-                    habit.isActiveNow; // Check if habit is currently active
+                final isActive = habit.isActiveNow;
 
                 return GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => DetailScreen(habit: habit),
-                    ),
-                  ),
-                  child: Card(
-                    elevation: isActive ? 12 : (isDoneToday ? 2 : 6),
-                    // Background changes based on status
-                    color: isActive
-                        ? Colors.deepPurple.shade50
-                        : (isDoneToday ? Colors.green.shade50 : Colors.white),
-                    shape: RoundedRectangleBorder(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DetailScreen(habit: habit),
+                      ),
+                    );
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeInOut,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      side: isActive
-                          ? const BorderSide(color: Colors.deepPurple, width: 2)
-                          : (isDoneToday
+                      boxShadow: [
+                        BoxShadow(
+                          color: isActive 
+                            ? Colors.deepPurple.withOpacity(0.3) 
+                            : Colors.black.withOpacity(0.05),
+                          blurRadius: isActive ? 15 : 5,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
+                    ),
+                    child: Card(
+                      elevation: 0, // Handled by AnimatedContainer shadow
+                      color: isActive
+                          ? Colors.deepPurple.shade50
+                          : (isDoneToday ? Colors.green.shade50 : Colors.white),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: isActive
+                            ? const BorderSide(color: Colors.deepPurple, width: 2)
+                            : (isDoneToday
                                 ? BorderSide(
                                     color: Colors.green.shade300,
                                     width: 2,
                                   )
                                 : BorderSide.none),
-                    ),
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  habit.name,
-                                  style: Theme.of(context).textTheme.titleLarge
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 24,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Hero(
+                                    tag: 'habit_name_${habit.id}',
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: Text(
+                                        habit.name,
+                                        style: Theme.of(context).textTheme.titleLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 24,
+                                            ),
                                       ),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete_rounded,
-                                  color: Colors.redAccent,
-                                ),
-                                onPressed: () =>
-                                    _showDeleteDialog(context, habit),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              _buildInfoChip(
-                                Icons.access_time,
-                                _formatTime(habit.startTime),
-                              ),
-                              const SizedBox(width: 12),
-                              _buildInfoChip(
-                                Icons.timer,
-                                '${habit.durationMinutes} min',
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          _buildStreakRow(habit),
-
-                          // Dynamic Focus Button: Shows automatically if session is active and not done
-                          if (isActive && !isDoneToday) ...[
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        FocusTimerScreen(habit: habit),
-                                    fullscreenDialog: true,
+                                    ),
                                   ),
                                 ),
-                                icon: const Icon(Icons.bolt_rounded),
-                                label: const Text(
-                                  'ENTER FOCUS SESSION',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.deepPurple,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete_rounded,
+                                    color: Colors.redAccent,
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
+                                  onPressed: () {
+                                    HapticFeedback.mediumImpact();
+                                    _showDeleteDialog(context, habit);
+                                  },
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                _buildInfoChip(
+                                  Icons.access_time,
+                                  _formatTime(habit.startTime),
+                                ),
+                                const SizedBox(width: 12),
+                                _buildInfoChip(
+                                  Icons.timer,
+                                  '${habit.durationMinutes} min',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            _buildStreakRow(habit),
 
-                          const SizedBox(height: 16),
-                          _buildMarkDoneButton(context, habit),
-                        ],
+                            if (isActive && !isDoneToday) ...[
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    HapticFeedback.lightImpact();
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            FocusTimerScreen(habit: habit),
+                                        fullscreenDialog: true,
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.bolt_rounded),
+                                  label: const Text(
+                                    'ENTER FOCUS SESSION',
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.deepPurple,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+
+                            const SizedBox(height: 16),
+                            _buildMarkDoneButton(context, habit),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -278,6 +308,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () {
+          HapticFeedback.mediumImpact();
           ref.read(habitsProvider.notifier).toggleDoneToday(habit.id);
           _showStatusSnackBar(context, habit.isCompletedToday);
         },
@@ -334,10 +365,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Widget _buildFab(BuildContext context) {
     return FloatingActionButton.extended(
-      onPressed: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
-      ),
+      onPressed: () {
+        HapticFeedback.lightImpact();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
+        );
+      },
       backgroundColor: Colors.deepPurple,
       icon: const Icon(Icons.add),
       label: const Text(
@@ -397,7 +431,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
             const SizedBox(height: 12),
             Text(
-              'Your journey to a better you starts with a single habit. Tap the button below to begin.',
+              'Your journey to a better you starts with a single habit.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
@@ -405,6 +439,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 height: 1.5,
               ),
             ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
+              ),
+              icon: const Icon(Icons.add),
+              label: const Text('Add My First Habit'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+            )
           ],
         ),
       ),

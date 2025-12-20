@@ -130,6 +130,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         children: [
           TextFormField(
             controller: _nameController,
+            textInputAction: TextInputAction.next, // Guides user forward
             decoration: InputDecoration(
               labelText: 'Habit name',
               hintText: 'e.g., Morning Meditation',
@@ -223,32 +224,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          SwitchListTile(
-            title: const Text(
-              'Daily reminder',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              'Will remind you daily at ${_selectedTime.format(context)}',
-            ),
-            value: _reminderEnabled,
-            activeColor: Colors.deepPurple,
-            onChanged: (v) => setState(() => _reminderEnabled = v),
-          ),
-          const SizedBox(height: 24),
-          SwitchListTile(
-            title: const Text(
-              'Focus Lockdown Mode',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            subtitle: const Text(
-              'Enable full-screen distraction-free timer for this habit',
-            ),
-            value: _focusModeEnabled,
-            activeColor: Colors.deepPurple,
-            onChanged: (v) => setState(() => _focusModeEnabled = v),
-          ),
-          const SizedBox(height: 16),
           Center(
             child: OutlinedButton.icon(
               onPressed: NotificationService.testAlarm,

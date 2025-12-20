@@ -1,3 +1,5 @@
+// lib/screens/focus_timer_screen.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,27 +15,37 @@ class FocusTimerScreen extends StatefulWidget {
   State<FocusTimerScreen> createState() => _FocusTimerScreenState();
 }
 
-class _FocusTimerScreenState extends State<FocusTimerScreen> {
+class _FocusTimerScreenState extends State<FocusTimerScreen> with TickerProviderStateMixin {
   late Timer _ticker;
-  late Timer _navigationHideTimer;
   late int _remainingSeconds;
+  late int _totalSeconds;
+  
+  // Animation for "Hold to Give Up" button
+  late AnimationController _holdController;
 
   @override
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
-
     WakelockPlus.enable();
+    
+    _totalSeconds = widget.habit.durationMinutes * 60;
     _calculateRemainingTime();
 
-    // Ticker that forces the UI to stay in sync with the actual clock
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       _calculateRemainingTime();
     });
 
-    // Aggressive navigation bar hiding timer (reduced to 10ms)
-    _navigationHideTimer = Timer.periodic(const Duration(milliseconds: 10), (_) {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+    _holdController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+
+    _holdController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        HapticFeedback.heavyImpact();
+        _exitManual();
+      }
     });
   }
 
@@ -63,13 +75,8 @@ class _FocusTimerScreenState extends State<FocusTimerScreen> {
     }
   }
 
-  void _hideNavigationBar() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
-  }
-
   void _exitWithSuccess() {
     _ticker.cancel();
-    _navigationHideTimer.cancel();
     if (mounted) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -81,10 +88,15 @@ class _FocusTimerScreenState extends State<FocusTimerScreen> {
     }
   }
 
+  void _exitManual() {
+    _ticker.cancel();
+    if (mounted) Navigator.pop(context);
+  }
+
   @override
   void dispose() {
     _ticker.cancel();
-    _navigationHideTimer.cancel();
+    _holdController.dispose();
     WakelockPlus.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
@@ -92,6 +104,7 @@ class _FocusTimerScreenState extends State<FocusTimerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final progress = _remainingSeconds / _totalSeconds;
     final minutes = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
     final seconds = (_remainingSeconds % 60).toString().padLeft(2, '0');
 
@@ -99,13 +112,7 @@ class _FocusTimerScreenState extends State<FocusTimerScreen> {
       canPop: false,
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: GestureDetector(
-          // CRITICAL: Capture ALL gestures including edge swipes
-          behavior: HitTestBehavior.translucent,
-          onTap: _hideNavigationBar,
-          onPanStart: (_) => _hideNavigationBar(),
-          onPanUpdate: (_) => _hideNavigationBar(),
-          onPanEnd: (_) => _hideNavigationBar(),
+        body: Center(
           child: Column(
             children: [
               const SizedBox(height: 100),
@@ -120,61 +127,90 @@ class _FocusTimerScreenState extends State<FocusTimerScreen> {
               ),
               Expanded(
                 child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      Text(
-                        '$minutes:$seconds',
-                        style: const TextStyle(
-                          fontSize: 110,
-                          fontWeight: FontWeight.w100,
-                          color: Colors.white,
-                          letterSpacing: 10,
+                      SizedBox(
+                        width: 300,
+                        height: 300,
+                        child: CircularProgressIndicator(
+                          value: progress,
+                          strokeWidth: 2,
+                          color: Colors.deepPurpleAccent.withOpacity(0.4),
+                          backgroundColor: Colors.white10,
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'FOCUS ACTIVE',
-                        style: TextStyle(
-                          color: Colors.greenAccent,
-                          letterSpacing: 4,
-                          fontSize: 12,
-                        ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '$minutes:$seconds',
+                            style: const TextStyle(
+                              fontSize: 100,
+                              fontWeight: FontWeight.w100,
+                              color: Colors.white,
+                              letterSpacing: 5,
+                            ),
+                          ),
+                          const Text(
+                            'FOCUS ACTIVE',
+                            style: TextStyle(
+                              color: Colors.greenAccent,
+                              letterSpacing: 4,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(bottom: 60),
+                padding: const EdgeInsets.only(bottom: 80),
                 child: GestureDetector(
-                  onLongPress: () {
-                    _ticker.cancel();
-                    _navigationHideTimer.cancel();
-                    Navigator.pop(context);
+                  onLongPressStart: (_) {
+                    _holdController.forward();
+                    HapticFeedback.lightImpact();
                   },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 18,
-                      horizontal: 45,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(40),
-                      border: Border.all(
-                        color: Colors.red.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: const Text(
-                      'HOLD TO GIVE UP',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
+                  onLongPressEnd: (_) {
+                    if (_holdController.status != AnimationStatus.completed) {
+                      _holdController.reverse();
+                    }
+                  },
+                  child: AnimatedBuilder(
+                    animation: _holdController,
+                    builder: (context, child) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 18,
+                          horizontal: 45,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(40),
+                          border: Border.all(
+                            color: Colors.red.withOpacity(0.3),
+                            width: 1,
+                          ),
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.red.withOpacity(0.6),
+                              Colors.transparent,
+                            ],
+                            stops: [_holdController.value, _holdController.value],
+                          ),
+                        ),
+                        child: Text(
+                          _holdController.value > 0.1 ? 'HOLDING...' : 'HOLD TO GIVE UP',
+                          style: TextStyle(
+                            color: _holdController.value > 0.1 ? Colors.white : Colors.red,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),

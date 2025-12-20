@@ -1,3 +1,5 @@
+// lib/screens/progress_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:habit_builder/models/habit.dart';
 import 'package:habit_builder/widgets/streak_calendar.dart';
@@ -17,142 +19,86 @@ class ProgressScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Streak Summary Cards
           Row(
             children: [
               Expanded(
-                child: Card(
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  color: Colors.orange.shade50,
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.whatshot,
-                          size: 48,
-                          color: Colors.orange[700],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          '$currentStreak',
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange[800],
-                          ),
-                        ),
-                        Text(
-                          'Current streak',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.orange[700],
-                          ),
-                        ),
-                        Text(
-                          'day${currentStreak == 1 ? "" : "s"}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[700],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                child: _buildStreakCard(
+                  context,
+                  'Current streak',
+                  currentStreak,
+                  Icons.whatshot,
+                  Colors.orange.shade800,
+                  Colors.orange.shade50,
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Card(
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  color: Colors.green.shade50,
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.emoji_events,
-                          size: 48,
-                          color: Colors.green[700],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          '$longestStreak',
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green[800],
-                          ),
-                        ),
-                        Text(
-                          'Best streak',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.green[700],
-                          ),
-                        ),
-                        Text(
-                          'day${longestStreak == 1 ? "" : "s"}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[700],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                child: _buildStreakCard(
+                  context,
+                  'Best streak',
+                  longestStreak,
+                  Icons.emoji_events,
+                  Colors.green.shade800,
+                  Colors.green.shade50,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 32),
-
-          // Calendar Title
           Text(
             'Completion History',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.deepPurple[800],
             ),
           ),
           const SizedBox(height: 16),
-
-          // Streak Calendar
           Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
+            elevation: 2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  StreakCalendar(habit: habit),
-                ],
-              ),
+              padding: const EdgeInsets.all(16),
+              child: StreakCalendar(habit: habit),
             ),
           ),
-          const SizedBox(height: 24),
-
-          // Motivational note
+          const SizedBox(height: 32),
           Center(
             child: Text(
               currentStreak == 0
-                  ? 'You haven\'t started yet. Today is the perfect day to begin! 💪'
-                  : 'Keep going! Every day counts. 🔥',
+                  ? 'Today is the perfect day to start! 💪'
+                  : 'Keep it up! Consistency is key. 🔥',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontStyle: FontStyle.italic,
-                color: Colors.grey[700],
+                color: Colors.grey[600],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStreakCard(BuildContext context, String title, int value, IconData icon, Color color, Color bg) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 32, color: color),
+          const SizedBox(height: 12),
+          Text(
+            '$value',
+            style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: color),
+          ),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color.withOpacity(0.8)),
           ),
         ],
       ),
