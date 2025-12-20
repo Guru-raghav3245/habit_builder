@@ -1,5 +1,3 @@
-// lib/screens/home_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -106,34 +104,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 final isDoneToday = habit.isCompletedToday;
                 final isActive = habit.isActiveNow;
 
-                return GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => DetailScreen(habit: habit),
-                      ),
-                    );
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 400),
-                    curve: Curves.easeInOut,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isActive 
-                            ? Colors.deepPurple.withOpacity(0.3) 
-                            : Colors.black.withOpacity(0.05),
-                          blurRadius: isActive ? 15 : 5,
-                          offset: const Offset(0, 4),
-                        )
-                      ],
-                    ),
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeInOut,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DetailScreen(habit: habit),
+                        ),
+                      );
+                    },
                     child: Card(
-                      elevation: 0, // Handled by AnimatedContainer shadow
+                      elevation: isActive ? 12 : (isDoneToday ? 2 : 6),
                       color: isActive
                           ? Colors.deepPurple.shade50
                           : (isDoneToday ? Colors.green.shade50 : Colors.white),
@@ -199,7 +185,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             ),
                             const SizedBox(height: 20),
                             _buildStreakRow(habit),
-
                             if (isActive && !isDoneToday) ...[
                               const SizedBox(height: 16),
                               SizedBox(
@@ -234,7 +219,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                 ),
                               ),
                             ],
-
                             const SizedBox(height: 16),
                             _buildMarkDoneButton(context, habit),
                           ],
@@ -310,7 +294,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         onPressed: () {
           HapticFeedback.mediumImpact();
           ref.read(habitsProvider.notifier).toggleDoneToday(habit.id);
-          _showStatusSnackBar(context, habit.isCompletedToday);
         },
         icon: Icon(
           habit.isCompletedToday
@@ -332,33 +315,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-      ),
-    );
-  }
-
-  void _showStatusSnackBar(BuildContext context, bool isCompleted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 1),
-        content: Row(
-          children: [
-            Icon(
-              isCompleted ? Icons.undo : Icons.check_circle,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              isCompleted
-                  ? 'Marked as not done today'
-                  : 'Great! Streak updated 🔥',
-            ),
-          ],
-        ),
-        backgroundColor: isCompleted
-            ? Colors.orange.shade600
-            : Colors.green.shade600,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -431,7 +387,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
             const SizedBox(height: 12),
             Text(
-              'Your journey to a better you starts with a single habit.',
+              'Your journey to a better you starts here.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
@@ -439,21 +395,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 height: 1.5,
               ),
             ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
+            const SizedBox(height: 24),
+            ElevatedButton(
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
               ),
-              icon: const Icon(Icons.add),
-              label: const Text('Add My First Habit'),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-            )
+              child: const Text('Add My First Habit'),
+            ),
           ],
         ),
       ),

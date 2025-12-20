@@ -96,29 +96,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
       );
       await notifier.updateHabit(updated);
     }
-
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 12),
-              Text(
-                widget.habitToEdit == null ? 'Habit added!' : 'Habit updated!',
-              ),
-            ],
-          ),
-          backgroundColor: Colors.green.shade600,
-          behavior: SnackBarBehavior.floating, // Enables the "floating" design
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ), // Matches Home Screen
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
   }
 
   Widget get content => SingleChildScrollView(
