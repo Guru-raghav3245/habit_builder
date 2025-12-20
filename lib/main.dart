@@ -20,12 +20,17 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
-        // Android-specific smooth zoom transitions for all navigation
+        // Enhanced page transitions for smoother navigation
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
-            TargetPlatform.android: ZoomPageTransitionsBuilder(),
+            TargetPlatform.android: ZoomPageTransitionsBuilder(
+              allowSnapshotting: true, // Caches frames for low-end devices
+            ),
           },
         ),
+        // Global animation defaults for ripples and highlights
+        splashFactory: InkSplash.splashFactory,
+        highlightColor: Colors.deepPurple.withOpacity(0.1),
       ),
       home: const HomeScreen(),
     );

@@ -95,10 +95,31 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
 
     if (mounted) {
       Navigator.pop(context);
+      
+      // Calculate dimensions for top positioning
+      final double screenHeight = MediaQuery.of(context).size.height;
+      final double statusBarHeight = MediaQuery.of(context).padding.top;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(widget.habitToEdit == null ? 'Habit added!' : 'Habit updated!'),
+          content: Text(
+            widget.habitToEdit == null ? 'Habit added!' : 'Habit updated!',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           backgroundColor: Colors.green.shade600,
+          behavior: SnackBarBehavior.floating,
+          // margin top moves it down from the status bar
+          // margin bottom pushes it to the top of the screen
+          margin: EdgeInsets.only(
+            top: statusBarHeight + 10,
+            left: 20,
+            right: 20,
+            bottom: screenHeight - (statusBarHeight + 100),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 3),
         ),
       );
     }

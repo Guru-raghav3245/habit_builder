@@ -211,16 +211,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     );
   }
 
-  void _showStatusSnackBar(BuildContext context, bool isCompleted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(children: [Icon(isCompleted ? Icons.undo : Icons.check_circle, color: Colors.white), const SizedBox(width: 12), Text(isCompleted ? 'Marked as not done today' : 'Great! Streak updated 🔥')]),
-        backgroundColor: isCompleted ? Colors.orange.shade600 : Colors.green.shade600,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  // lib/screens/home_screen.dart
+
+void _showStatusSnackBar(BuildContext context, bool isCompleted) {
+  final topPadding = MediaQuery.of(context).padding.top; // Get status bar height
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          Icon(isCompleted ? Icons.undo : Icons.check_circle, color: Colors.white),
+          const SizedBox(width: 12),
+          Text(isCompleted ? 'Marked as not done today' : 'Great! Streak updated 🔥')
+        ],
       ),
-    );
-  }
+      backgroundColor: isCompleted ? Colors.orange.shade600 : Colors.green.shade600,
+      behavior: SnackBarBehavior.floating, // Required for custom margins
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: EdgeInsets.only(
+        top: topPadding + 10, // Position at the top
+        left: 12,
+        right: 12,
+        bottom: MediaQuery.of(context).size.height - (topPadding + 100), // Push to top
+      ),
+    ),
+  );
+}
 
   Widget _buildFab(BuildContext context) {
     return FloatingActionButton.extended(
