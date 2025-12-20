@@ -14,7 +14,8 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -36,7 +37,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 
   String _formatTime(TimeOfDay time) {
     final now = DateTime.now();
-    final dateTime = DateTime(now.year, now.month, now.day, time.hour, time.minute);
+    final dateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    );
     return DateFormat('h:mm a').format(dateTime);
   }
 
@@ -54,7 +61,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
               stretch: true,
               backgroundColor: Colors.deepPurple,
               flexibleSpace: FlexibleSpaceBar(
-                title: const Text('My Daily Habits', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                title: const Text(
+                  'My Daily Habits',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
                 centerTitle: true,
                 background: Container(
                   decoration: BoxDecoration(
@@ -64,7 +77,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                       colors: [Colors.deepPurple, Colors.deepPurple.shade800],
                     ),
                   ),
-                  child: Center(child: Icon(Icons.auto_graph_rounded, size: 80, color: Colors.white.withOpacity(0.2))),
+                  child: Center(
+                    child: Icon(
+                      Icons.auto_graph_rounded,
+                      size: 80,
+                      color: Colors.white.withOpacity(0.2),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -82,19 +101,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
               itemBuilder: (context, index) {
                 final habit = habits[index];
                 final isDoneToday = habit.isCompletedToday;
-                final isActive = habit.isActiveNow; // Check if habit is currently active
+                final isActive =
+                    habit.isActiveNow; // Check if habit is currently active
 
                 return GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DetailScreen(habit: habit))),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => DetailScreen(habit: habit),
+                    ),
+                  ),
                   child: Card(
                     elevation: isActive ? 12 : (isDoneToday ? 2 : 6),
                     // Background changes based on status
-                    color: isActive ? Colors.deepPurple.shade50 : (isDoneToday ? Colors.green.shade50 : Colors.white),
+                    color: isActive
+                        ? Colors.deepPurple.shade50
+                        : (isDoneToday ? Colors.green.shade50 : Colors.white),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
-                      side: isActive 
-                          ? const BorderSide(color: Colors.deepPurple, width: 2) 
-                          : (isDoneToday ? BorderSide(color: Colors.green.shade300, width: 2) : BorderSide.none),
+                      side: isActive
+                          ? const BorderSide(color: Colors.deepPurple, width: 2)
+                          : (isDoneToday
+                                ? BorderSide(
+                                    color: Colors.green.shade300,
+                                    width: 2,
+                                  )
+                                : BorderSide.none),
                     ),
                     margin: const EdgeInsets.only(bottom: 16),
                     child: Padding(
@@ -104,19 +136,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                         children: [
                           Row(
                             children: [
-                              Expanded(child: Text(habit.name, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, fontSize: 24))),
+                              Expanded(
+                                child: Text(
+                                  habit.name,
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 24,
+                                      ),
+                                ),
+                              ),
                               IconButton(
-                                icon: const Icon(Icons.delete_rounded, color: Colors.redAccent),
-                                onPressed: () => _showDeleteDialog(context, habit),
+                                icon: const Icon(
+                                  Icons.delete_rounded,
+                                  color: Colors.redAccent,
+                                ),
+                                onPressed: () =>
+                                    _showDeleteDialog(context, habit),
                               ),
                             ],
                           ),
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              _buildInfoChip(Icons.access_time, _formatTime(habit.startTime)),
+                              _buildInfoChip(
+                                Icons.access_time,
+                                _formatTime(habit.startTime),
+                              ),
                               const SizedBox(width: 12),
-                              _buildInfoChip(Icons.timer, '${habit.durationMinutes} min'),
+                              _buildInfoChip(
+                                Icons.timer,
+                                '${habit.durationMinutes} min',
+                              ),
                             ],
                           ),
                           const SizedBox(height: 20),
@@ -128,14 +179,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton.icon(
-                                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FocusTimerScreen(habit: habit), fullscreenDialog: true)),
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        FocusTimerScreen(habit: habit),
+                                    fullscreenDialog: true,
+                                  ),
+                                ),
                                 icon: const Icon(Icons.bolt_rounded),
-                                label: const Text('ENTER FOCUS SESSION', style: TextStyle(fontWeight: FontWeight.bold)),
+                                label: const Text(
+                                  'ENTER FOCUS SESSION',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.deepPurple,
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
                                 ),
                               ),
                             ),
@@ -165,7 +230,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         title: const Text('Delete habit?'),
         content: Text('Are you sure you want to delete "${habit.name}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () {
               ref.read(habitsProvider.notifier).deleteHabit(habit.id);
@@ -181,11 +249,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   Widget _buildStreakRow(Habit habit) {
     return Row(
       children: [
-        Icon(Icons.whatshot_outlined, size: 36, color: habit.currentStreak > 0 ? Colors.orangeAccent : Colors.grey[400]),
+        Icon(
+          Icons.whatshot_outlined,
+          size: 36,
+          color: habit.currentStreak > 0
+              ? Colors.orangeAccent
+              : Colors.grey[400],
+        ),
         const SizedBox(width: 10),
         Text(
-          habit.currentStreak == 0 ? 'Start your streak today' : 'Current streak: ${habit.currentStreak} day${habit.currentStreak == 1 ? "" : "s"}',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: habit.currentStreak > 0 ? Colors.orange[800] : Colors.grey[600]),
+          habit.currentStreak == 0
+              ? 'Start your streak today'
+              : 'Current streak: ${habit.currentStreak} day${habit.currentStreak == 1 ? "" : "s"}',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: habit.currentStreak > 0
+                ? Colors.orange[800]
+                : Colors.grey[600],
+          ),
         ),
       ],
     );
@@ -199,59 +281,93 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
           ref.read(habitsProvider.notifier).toggleDoneToday(habit.id);
           _showStatusSnackBar(context, habit.isCompletedToday);
         },
-        icon: Icon(habit.isCompletedToday ? Icons.undo_rounded : Icons.check_circle_outline, size: 28),
-        label: Text(habit.isCompletedToday ? 'Undo Completion' : 'Mark as Done', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        icon: Icon(
+          habit.isCompletedToday
+              ? Icons.undo_rounded
+              : Icons.check_circle_outline,
+          size: 28,
+        ),
+        label: Text(
+          habit.isCompletedToday ? 'Undo Completion' : 'Mark as Done',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: habit.isCompletedToday ? Colors.orange.shade600 : Colors.deepPurple,
+          backgroundColor: habit.isCompletedToday
+              ? Colors.orange.shade600
+              : Colors.deepPurple,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
       ),
     );
   }
 
-  // lib/screens/home_screen.dart
-
-void _showStatusSnackBar(BuildContext context, bool isCompleted) {
-  final topPadding = MediaQuery.of(context).padding.top; // Get status bar height
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Row(
-        children: [
-          Icon(isCompleted ? Icons.undo : Icons.check_circle, color: Colors.white),
-          const SizedBox(width: 12),
-          Text(isCompleted ? 'Marked as not done today' : 'Great! Streak updated 🔥')
-        ],
+  void _showStatusSnackBar(BuildContext context, bool isCompleted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 1),
+        content: Row(
+          children: [
+            Icon(
+              isCompleted ? Icons.undo : Icons.check_circle,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              isCompleted
+                  ? 'Marked as not done today'
+                  : 'Great! Streak updated 🔥',
+            ),
+          ],
+        ),
+        backgroundColor: isCompleted
+            ? Colors.orange.shade600
+            : Colors.green.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      backgroundColor: isCompleted ? Colors.orange.shade600 : Colors.green.shade600,
-      behavior: SnackBarBehavior.floating, // Required for custom margins
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: EdgeInsets.only(
-        top: topPadding + 10, // Position at the top
-        left: 12,
-        right: 12,
-        bottom: MediaQuery.of(context).size.height - (topPadding + 100), // Push to top
-      ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildFab(BuildContext context) {
     return FloatingActionButton.extended(
-      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEditHabitScreen())),
+      onPressed: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
+      ),
       backgroundColor: Colors.deepPurple,
       icon: const Icon(Icons.add),
-      label: const Text('Add Habit', style: TextStyle(fontWeight: FontWeight.bold)),
+      label: const Text(
+        'Add Habit',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
     );
   }
 
   Widget _buildInfoChip(IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(20)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 18, color: Colors.grey[700]), const SizedBox(width: 6), Text(label, style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w600))]),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: Colors.grey[700]),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -262,11 +378,33 @@ void _showStatusSnackBar(BuildContext context, bool isCompleted) {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(padding: const EdgeInsets.all(32), decoration: BoxDecoration(color: Colors.deepPurple.shade50, shape: BoxShape.circle), child: Icon(Icons.auto_graph_rounded, size: 80, color: Colors.deepPurple.shade200)),
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.deepPurple.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.auto_graph_rounded,
+                size: 80,
+                color: Colors.deepPurple.shade200,
+              ),
+            ),
             const SizedBox(height: 32),
-            const Text('No habits yet', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const Text(
+              'No habits yet',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
-            Text('Your journey to a better you starts with a single habit. Tap the button below to begin.', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey[600], height: 1.5)),
+            Text(
+              'Your journey to a better you starts with a single habit. Tap the button below to begin.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                height: 1.5,
+              ),
+            ),
           ],
         ),
       ),
