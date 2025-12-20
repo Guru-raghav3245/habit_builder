@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_builder/models/habit.dart';
 import 'package:habit_builder/providers/habits_provider.dart';
@@ -25,8 +26,13 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   late int _selectedDuration;
   late bool _reminderEnabled;
   late bool _focusModeEnabled;
+  late bool _isDurationExpanded;
+  late FixedExtentScrollController _durationController;
 
-  final List<int> durationPresets = [10, 20, 30];
+  // Duolingo / Calm–style presets
+  final List<int> durationPresets = [5, 10, 15, 20, 30, 45, 60];
+  final double _itemExtent = 50.0;
+  final int _maxDuration = 120;
 
   @override
   void initState() {
@@ -39,12 +45,50 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     _selectedDuration = widget.habitToEdit?.durationMinutes ?? 20;
     _reminderEnabled = widget.habitToEdit?.reminderEnabled ?? true;
     _focusModeEnabled = widget.habitToEdit?.focusModeEnabled ?? false;
+    _isDurationExpanded = false;
+    _durationController = FixedExtentScrollController();
+    _durationController.addListener(_onDurationScroll);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _durationController.dispose();
     super.dispose();
+  }
+
+  void _onDurationScroll() {
+    final index = (_durationController.offset / _itemExtent).round().clamp(0, _maxDuration - 1);
+    final newDuration = index + 1;
+    if (newDuration != _selectedDuration) {
+      setState(() => _selectedDuration = newDuration);
+    }
+  }
+
+  void _toggleDurationExpansion() {
+    setState(() => _isDurationExpanded = !_isDurationExpanded);
+    if (_isDurationExpanded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _durationController.animateTo(
+          (_selectedDuration - 1) * _itemExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      });
+    }
+  }
+
+  void _onPresetSelected(int minutes) {
+    setState(() => _selectedDuration = minutes);
+    _durationController.animateTo(
+      (minutes - 1) * _itemExtent,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _onDoneDuration() {
+    setState(() => _isDurationExpanded = false);
   }
 
   Future<void> _pickTime() async {
@@ -70,9 +114,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
       setState(() => _selectedTime = picked);
     }
   }
-
-  void _selectDuration(int minutes) =>
-      setState(() => _selectedDuration = minutes);
 
   Future<void> _saveHabit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -107,7 +148,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         children: [
           TextFormField(
             controller: _nameController,
-            textInputAction: TextInputAction.next, // Guides user forward
+            textInputAction: TextInputAction.next,
             decoration: InputDecoration(
               labelText: 'Habit name',
               hintText: 'e.g., Morning Meditation',
@@ -161,46 +202,122 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              ...durationPresets.map(
-                (min) => FilterChip(
-                  label: Text('$min min'),
-                  selected: _selectedDuration == min,
-                  onSelected: (_) => _selectDuration(min),
-                  selectedColor: Colors.deepPurple,
-                  checkmarkColor: Colors.white,
-                ),
+          InkWell(
+            onTap: _toggleDurationExpansion,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade400),
+                borderRadius: BorderRadius.circular(16),
               ),
-              FilterChip(
-                label: const Text('Custom'),
-                selected: !durationPresets.contains(_selectedDuration),
-                onSelected: (_) async {
-                  final int? custom = await showDialog<int>(
-                    context: context,
-                    builder: (_) =>
-                        _CustomDurationDialog(initial: _selectedDuration),
-                  );
-                  if (custom != null && custom > 0)
-                    setState(() => _selectedDuration = custom);
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: Text(
-              '$_selectedDuration minutes',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
+              child: Row(
+                children: [
+                  const Icon(Icons.timer_outlined, color: Colors.deepPurple),
+                  const SizedBox(width: 16),
+                  Text(
+                    '$_selectedDuration minutes',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 18,
+                    color: _isDurationExpanded ? Colors.deepPurple : null,
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 32),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: _isDurationExpanded
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 16),
+                      Text(
+                        'Select duration',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 12),
+                      // Presets chips
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: durationPresets.map((minutes) {
+                          final selected = _selectedDuration == minutes;
+                          return ChoiceChip(
+                            label: Text('$minutes min'),
+                            selected: selected,
+                            selectedColor: Colors.deepPurple.shade50,
+                            labelStyle: TextStyle(
+                              color: selected ? Colors.deepPurple : null,
+                              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                            onSelected: (_) => _onPresetSelected(minutes),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                      // Wheel picker
+                      SizedBox(
+                        height: 200,
+                        child: ListWheelScrollView.useDelegate(
+                          perspective: 0.002,
+                          physics: const FixedExtentScrollPhysics(),
+                          controller: _durationController,
+                          itemExtent: _itemExtent,
+                          childDelegate: ListWheelChildBuilderDelegate(
+                            builder: (context, index) {
+                              final minutes = index + 1;
+                              final isPreset = durationPresets.contains(minutes);
+                              return Container(
+                                alignment: Alignment.center,
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: Text(
+                                  '$minutes min',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: isPreset ? FontWeight.bold : FontWeight.normal,
+                                    color: isPreset ? Colors.deepPurple : null,
+                                  ),
+                                ),
+                              );
+                            },
+                            childCount: _maxDuration,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Done button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _onDoneDuration,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepPurple,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Text(
+                            'Done',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
+          const SizedBox(height: 40),
           Center(
             child: OutlinedButton.icon(
               onPressed: NotificationService.testAlarm,
@@ -249,48 +366,5 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             appBar: AppBar(title: const Text('New Habit'), centerTitle: true),
             body: content,
           );
-  }
-}
-
-class _CustomDurationDialog extends StatefulWidget {
-  final int initial;
-  const _CustomDurationDialog({required this.initial});
-
-  @override
-  State<_CustomDurationDialog> createState() => _CustomDurationDialogState();
-}
-
-class _CustomDurationDialogState extends State<_CustomDurationDialog> {
-  late TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initial.toString());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Custom duration (minutes)'),
-      content: TextField(
-        controller: _controller,
-        keyboardType: TextInputType.number,
-        autofocus: true,
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () {
-            final int? value = int.tryParse(_controller.text);
-            if (value != null && value > 0) Navigator.pop(context, value);
-          },
-          child: const Text('OK'),
-        ),
-      ],
-    );
   }
 }
