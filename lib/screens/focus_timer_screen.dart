@@ -1,9 +1,9 @@
 // lib/screens/focus_timer_screen.dart
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:android_gesture_exclusion/android_gesture_exclusion.dart';
 import 'package:habit_builder/models/habit.dart';
 
 class FocusTimerScreen extends StatefulWidget {
@@ -15,20 +15,22 @@ class FocusTimerScreen extends StatefulWidget {
   State<FocusTimerScreen> createState() => _FocusTimerScreenState();
 }
 
-class _FocusTimerScreenState extends State<FocusTimerScreen> with TickerProviderStateMixin {
+class _FocusTimerScreenState extends State<FocusTimerScreen>
+    with TickerProviderStateMixin {
   late Timer _ticker;
   late int _remainingSeconds;
   late int _totalSeconds;
-  
+
   // Animation for "Hold to Give Up" button
   late AnimationController _holdController;
 
   @override
   void initState() {
     super.initState();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+    // Disable ALL system gestures and back navigation
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     WakelockPlus.enable();
-    
+
     _totalSeconds = widget.habit.durationMinutes * 60;
     _calculateRemainingTime();
 
@@ -76,9 +78,8 @@ class _FocusTimerScreenState extends State<FocusTimerScreen> with TickerProvider
   }
 
   void _exitWithSuccess() {
-    _ticker.cancel();
+    _cleanupAndExit();
     if (mounted) {
-      Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Session complete! You did it! 🎉'),
@@ -89,8 +90,14 @@ class _FocusTimerScreenState extends State<FocusTimerScreen> with TickerProvider
   }
 
   void _exitManual() {
+    _cleanupAndExit();
+  }
+
+  void _cleanupAndExit() {
     _ticker.cancel();
-    if (mounted) Navigator.pop(context);
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -108,113 +115,125 @@ class _FocusTimerScreenState extends State<FocusTimerScreen> with TickerProvider
     final minutes = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
     final seconds = (_remainingSeconds % 60).toString().padLeft(2, '0');
 
-    return PopScope(
-      canPop: false,
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
-          child: Column(
-            children: [
-              const SizedBox(height: 100),
-              Text(
-                widget.habit.name.toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white38,
-                  fontSize: 14,
-                  letterSpacing: 6,
-                  fontWeight: FontWeight.w300,
-                ),
-              ),
-              Expanded(
-                child: Center(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox(
-                        width: 300,
-                        height: 300,
-                        child: CircularProgressIndicator(
-                          value: progress,
-                          strokeWidth: 2,
-                          color: Colors.deepPurpleAccent.withOpacity(0.4),
-                          backgroundColor: Colors.white10,
-                        ),
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '$minutes:$seconds',
-                            style: const TextStyle(
-                              fontSize: 100,
-                              fontWeight: FontWeight.w100,
-                              color: Colors.white,
-                              letterSpacing: 5,
-                            ),
-                          ),
-                          const Text(
-                            'FOCUS ACTIVE',
-                            style: TextStyle(
-                              color: Colors.greenAccent,
-                              letterSpacing: 4,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+    return AndroidGestureExclusionContainer(
+      // Block ALL system edge swipes (MIUI gestures on Redmi Note 8 Pro)
+      verticalExclusionMargin: 0,
+      horizontalExclusionMargin: 0,
+      child: PopScope(
+        canPop: false, // Blocks back button & Flutter swipe back
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          body: Center(
+            child: Column(
+              children: [
+                const SizedBox(height: 100),
+                Text(
+                  widget.habit.name.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white38,
+                    fontSize: 14,
+                    letterSpacing: 6,
+                    fontWeight: FontWeight.w300,
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 80),
-                child: GestureDetector(
-                  onLongPressStart: (_) {
-                    _holdController.forward();
-                    HapticFeedback.lightImpact();
-                  },
-                  onLongPressEnd: (_) {
-                    if (_holdController.status != AnimationStatus.completed) {
-                      _holdController.reverse();
-                    }
-                  },
-                  child: AnimatedBuilder(
-                    animation: _holdController,
-                    builder: (context, child) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 18,
-                          horizontal: 45,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(40),
-                          border: Border.all(
-                            color: Colors.red.withOpacity(0.3),
-                            width: 1,
-                          ),
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.red.withOpacity(0.6),
-                              Colors.transparent,
-                            ],
-                            stops: [_holdController.value, _holdController.value],
+                Expanded(
+                  child: Center(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 300,
+                          height: 300,
+                          child: CircularProgressIndicator(
+                            value: progress,
+                            strokeWidth: 2,
+                            color: Colors.deepPurpleAccent.withOpacity(0.4),
+                            backgroundColor: Colors.white10,
                           ),
                         ),
-                        child: Text(
-                          _holdController.value > 0.1 ? 'HOLDING...' : 'HOLD TO GIVE UP',
-                          style: TextStyle(
-                            color: _holdController.value > 0.1 ? Colors.white : Colors.red,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                          ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '$minutes:$seconds',
+                              style: const TextStyle(
+                                fontSize: 100,
+                                fontWeight: FontWeight.w100,
+                                color: Colors.white,
+                                letterSpacing: 5,
+                              ),
+                            ),
+                            const Text(
+                              'FOCUS ACTIVE',
+                              style: TextStyle(
+                                color: Colors.greenAccent,
+                                letterSpacing: 4,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
-                      );
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 80),
+                  child: GestureDetector(
+                    onLongPressStart: (_) {
+                      _holdController.forward();
+                      HapticFeedback.lightImpact();
                     },
+                    onLongPressEnd: (_) {
+                      if (_holdController.status != AnimationStatus.completed) {
+                        _holdController.reverse();
+                      }
+                    },
+                    child: AnimatedBuilder(
+                      animation: _holdController,
+                      builder: (context, child) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 18,
+                            horizontal: 45,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(40),
+                            border: Border.all(
+                              color: Colors.red.withOpacity(0.3),
+                              width: 1,
+                            ),
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.red.withOpacity(0.6),
+                                Colors.transparent,
+                              ],
+                              stops: [
+                                _holdController.value,
+                                _holdController.value,
+                              ],
+                            ),
+                          ),
+                          child: Text(
+                            _holdController.value > 0.1
+                                ? 'HOLDING...'
+                                : 'HOLD TO GIVE UP',
+                            style: TextStyle(
+                              color: _holdController.value > 0.1
+                                  ? Colors.white
+                                  : Colors.red,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
