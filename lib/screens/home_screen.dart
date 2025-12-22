@@ -329,10 +329,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         );
       },
       backgroundColor: Colors.deepPurple,
-      icon: const Icon(Icons.add),
+      icon: const Icon(Icons.add, color: Colors.white),
       label: const Text(
         'Add Habit',
-        style: TextStyle(fontWeight: FontWeight.bold),
+        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
       ),
     );
   }
@@ -396,19 +396,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Add My First Habit'),
-            ),
           ],
         ),
       ),
