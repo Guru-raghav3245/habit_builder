@@ -122,12 +122,32 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              widget.habitToEdit == null ? 'Habit created!' : 'Changes saved!',
-            ),
-            // REMOVE SnackBarBehavior.floating to make it push the button up
+            // 1. Behavior must stay 'fixed' to push the button up
             behavior: SnackBarBehavior.fixed,
-            backgroundColor: Colors.green,
+            // 2. Custom Background Color
+            backgroundColor: Colors.deepPurple,
+            // 3. Custom Elevation and Shape
+            elevation: 0,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            // 4. Custom Content (Layout)
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Text(
+                  widget.habitToEdit == null ? 'Habit created!' : 'Changes saved!',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            // 5. Custom Duration
+            duration: const Duration(seconds: 2),
           ),
         );
 
@@ -141,15 +161,14 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Error saving habit'),
             behavior: SnackBarBehavior.fixed,
-            backgroundColor: Colors.red,
+            backgroundColor: Colors.redAccent,
+            content: Text('Error saving habit'),
           ),
         );
       }
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final content = SingleChildScrollView(
