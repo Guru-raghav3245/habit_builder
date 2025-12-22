@@ -129,11 +129,11 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             backgroundColor: Colors.green,
           ),
         );
-
-        // If it's a separate screen, pop it.
-        // If it's embedded, we just show the snackbar to confirm it worked.
+        
         if (!widget.isEmbedded) {
           Navigator.of(context).pop();
+        } else {
+          Navigator.of(context).popUntil((route) => route.isFirst);
         }
       }
     } catch (e) {
