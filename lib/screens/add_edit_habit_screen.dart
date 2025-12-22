@@ -125,11 +125,12 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             content: Text(
               widget.habitToEdit == null ? 'Habit created!' : 'Changes saved!',
             ),
-            behavior: SnackBarBehavior.floating,
+            // REMOVE SnackBarBehavior.floating to make it push the button up
+            behavior: SnackBarBehavior.fixed,
             backgroundColor: Colors.green,
           ),
         );
-        
+
         if (!widget.isEmbedded) {
           Navigator.of(context).pop();
         } else {
@@ -141,6 +142,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Error saving habit'),
+            behavior: SnackBarBehavior.fixed,
             backgroundColor: Colors.red,
           ),
         );
