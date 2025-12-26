@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:habit_builder/models/habit.dart';
-import 'dart:math';
 
 class MiniStreakGrid extends StatelessWidget {
   final Habit habit;
@@ -10,8 +9,6 @@ class MiniStreakGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final totalDays = habit.targetDays;
-    // Calculate a square-ish grid (e.g., 25 days = 5 columns)
-    final crossAxisCount = sqrt(totalDays).ceil();
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -21,17 +18,11 @@ class MiniStreakGrid extends StatelessWidget {
       habit.startDate.day,
     );
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: totalDays,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 4,
-        mainAxisSpacing: 4,
-      ),
-      itemBuilder: (context, index) {
-        // dayDate represents which specific day of the journey this box is
+    // Using Wrap instead of GridView to ensure it renders correctly regardless of count
+    return Wrap(
+      spacing: 4, // Horizontal space between boxes
+      runSpacing: 4, // Vertical space between lines
+      children: List.generate(totalDays, (index) {
         final dayDate = start.add(Duration(days: index));
 
         final isFuture = dayDate.isAfter(today);
@@ -44,25 +35,27 @@ class MiniStreakGrid extends StatelessWidget {
 
         Color boxColor;
         if (isFuture) {
-          boxColor = Colors.grey.shade200; // Future day
+          boxColor = Colors.grey.shade200;
         } else if (isCompleted) {
-          boxColor = Colors.green; // Completed day
+          boxColor = Colors.green;
         } else if (dayDate.isAtSameMomentAs(today)) {
-          boxColor = Colors.grey.shade300; // Today (not yet done)
+          boxColor = Colors.grey.shade300;
         } else {
-          boxColor = Colors.redAccent.withOpacity(0.6); // Missed past day
+          boxColor = Colors.redAccent.withOpacity(0.6);
         }
 
         return Container(
+          width: 12, // Fixed size for reliability
+          height: 12,
           decoration: BoxDecoration(
             color: boxColor,
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(2),
             border: dayDate.isAtSameMomentAs(today)
-                ? Border.all(color: Colors.deepPurple, width: 1.5)
+                ? Border.all(color: Colors.deepPurple, width: 1)
                 : null,
           ),
         );
-      },
+      }),
     );
   }
 }

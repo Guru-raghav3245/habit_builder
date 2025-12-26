@@ -144,7 +144,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final isDoneToday = habit.isCompletedToday;
     final isActive = habit.isActiveNow && !isArchived;
 
-    // Simplified view for archived habits: Just Name and Status
     if (isArchived) {
       return Card(
         margin: const EdgeInsets.only(bottom: 12),
@@ -238,9 +237,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ],
                 ),
                 const SizedBox(height: 16),
-
                 _buildProgressStats(habit),
-
                 const SizedBox(height: 16),
                 Text(
                   'Journey Grid (${habit.targetDays} Days)',
@@ -251,9 +248,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Compact square grid
-                SizedBox(width: 120, child: MiniStreakGrid(habit: habit)),
-
+                // Grid that handles many days (like 76) using Wrap
+                MiniStreakGrid(habit: habit),
                 const SizedBox(height: 20),
                 _buildStreakRow(habit),
                 const SizedBox(height: 16),
