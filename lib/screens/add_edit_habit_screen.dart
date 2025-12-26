@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_builder/models/habit.dart';
 import 'package:habit_builder/providers/habits_provider.dart';
-import 'package:habit_builder/services/notification_service.dart';
 
 class AddEditHabitScreen extends ConsumerStatefulWidget {
   final Habit? habitToEdit;
@@ -22,6 +21,7 @@ class AddEditHabitScreen extends ConsumerStatefulWidget {
 class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
+  late TextEditingController _goalDaysController;
 
   late ValueNotifier<int> _hourNotifier;
   late ValueNotifier<int> _minNotifier;
@@ -44,6 +44,9 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     super.initState();
     final habit = widget.habitToEdit;
     _nameController = TextEditingController(text: habit?.name ?? '');
+    _goalDaysController = TextEditingController(
+      text: habit?.targetDays.toString() ?? '30',
+    );
 
     final initialTime = habit?.startTime ?? const TimeOfDay(hour: 9, minute: 0);
     int displayHour = initialTime.hourOfPeriod == 0
@@ -74,6 +77,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _goalDaysController.dispose();
     _hourController.dispose();
     _minController.dispose();
     _periodController.dispose();
@@ -89,10 +93,8 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     int h = _hourNotifier.value;
     final m = _minNotifier.value;
     final isPm = _periodNotifier.value == "PM";
-
     if (isPm && h < 12) h += 12;
     if (!isPm && h == 12) h = 0;
-
     return TimeOfDay(hour: h, minute: m);
   }
 
@@ -100,6 +102,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final selectedTime = _getFinalTime();
+    final goalDays = int.tryParse(_goalDaysController.text) ?? 30;
     final notifier = ref.read(habitsProvider.notifier);
 
     try {
@@ -108,67 +111,25 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
           name: _nameController.text.trim(),
           startTime: selectedTime,
           durationMinutes: _durationNotifier.value,
-          reminderEnabled: true,
+          targetDays: goalDays,
         );
       } else {
         final updated = widget.habitToEdit!.copyWith(
           name: _nameController.text.trim(),
           startTime: selectedTime,
           durationMinutes: _durationNotifier.value,
+          targetDays: goalDays,
         );
         await notifier.updateHabit(updated);
       }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            // 1. Behavior must stay 'fixed' to push the button up
-            behavior: SnackBarBehavior.fixed,
-            // 2. Custom Background Color
-            backgroundColor: Colors.deepPurple,
-            // 3. Custom Elevation and Shape
-            elevation: 0,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            // 4. Custom Content (Layout)
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 12),
-                Text(
-                  widget.habitToEdit == null ? 'Habit created!' : 'Changes saved!',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-            // 5. Custom Duration
-            duration: const Duration(seconds: 2),
-          ),
-        );
-
-        if (!widget.isEmbedded) {
-          Navigator.of(context).pop();
-        } else {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        }
-      }
+      if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            behavior: SnackBarBehavior.fixed,
-            backgroundColor: Colors.redAccent,
-            content: Text('Error saving habit'),
-          ),
-        );
-      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Error saving habit')));
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final content = SingleChildScrollView(
@@ -184,21 +145,24 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.grey.shade50,
-                hintText: 'e.g., Reading',
-                prefixIcon: const Icon(
-                  Icons.edit_note,
-                  color: Colors.deepPurple,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
+                border: OutlineInputBorder(borderSide: BorderSide.none),
               ),
               validator: (v) =>
                   v?.trim().isEmpty ?? true ? 'Please enter a name' : null,
             ),
             const SizedBox(height: 24),
-
+            _buildSectionLabel('Goal Duration (Days)'),
+            TextFormField(
+              controller: _goalDaysController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                hintText: 'e.g., 20, 90',
+                border: OutlineInputBorder(borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 24),
             _buildCustomPicker(
               label: 'Start Time',
               icon: Icons.access_time,
@@ -214,7 +178,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                   builder: (_, m, __) => ValueListenableBuilder(
                     valueListenable: _periodNotifier,
                     builder: (_, p, __) => Text(
-                      '${h.toString()}:${m.toString().padLeft(2, '0')} $p',
+                      '$h:${m.toString().padLeft(2, '0')} $p',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -225,11 +189,9 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
               ),
               expandedChild: _buildTimeWheelPicker(),
             ),
-
             const SizedBox(height: 20),
-
             _buildCustomPicker(
-              label: 'Duration',
+              label: 'Session Duration',
               icon: Icons.timer_outlined,
               isExpanded: _isDurationExpanded,
               onToggle: () => setState(() {
@@ -248,9 +210,25 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
               ),
               expandedChild: _buildDurationWheelPicker(),
             ),
-
             const SizedBox(height: 40),
-            _buildActionButtons(),
+            ElevatedButton(
+              onPressed: _saveHabit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 60),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Text(
+                widget.habitToEdit == null ? 'Create Habit' : 'Save Changes',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -263,25 +241,22 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
               title: Text(
                 widget.habitToEdit == null ? 'New Habit' : 'Edit Habit',
               ),
-              centerTitle: true,
             ),
             body: content,
           );
   }
 
-  Widget _buildSectionLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10, left: 4),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-          color: Colors.black54,
-        ),
+  Widget _buildSectionLabel(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: 10, left: 4),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 14,
+        color: Colors.black54,
       ),
-    );
-  }
+    ),
+  );
 
   Widget _buildCustomPicker({
     required String label,
@@ -302,14 +277,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             border: Border.all(
               color: isExpanded ? Colors.deepPurple : Colors.grey.shade200,
             ),
-            boxShadow: [
-              if (isExpanded)
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-            ],
           ),
           child: Column(
             children: [
@@ -319,7 +286,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                 title: headerValue,
                 trailing: Icon(
                   isExpanded ? Icons.expand_less : Icons.expand_more,
-                  color: Colors.grey,
                 ),
               ),
               AnimatedSize(
@@ -334,80 +300,32 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   }
 
   Widget _buildTimeWheelPicker() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
+    return SizedBox(
+      height: 140,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Divider(),
-          SizedBox(
-            height: 140,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _wheelColumn(_hourController, 12, _hourNotifier, '', offset: 1),
-                const Text(
-                  ':',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                _wheelColumn(_minController, 60, _minNotifier, '', pad: true),
-                _wheelColumnStrings(_periodController, [
-                  "AM",
-                  "PM",
-                ], _periodNotifier),
-              ],
-            ),
+          _wheelColumn(_hourController, 12, _hourNotifier, '', offset: 1),
+          const Text(
+            ':',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
+          _wheelColumn(_minController, 60, _minNotifier, '', pad: true),
+          _wheelColumnStrings(_periodController, ["AM", "PM"], _periodNotifier),
         ],
       ),
     );
   }
 
   Widget _buildDurationWheelPicker() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          const Divider(),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: durationPresets
-                  .map(
-                    (m) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ValueListenableBuilder(
-                        valueListenable: _durationNotifier,
-                        builder: (_, current, __) => ChoiceChip(
-                          label: Text('$m min'),
-                          selected: current == m,
-                          onSelected: (_) {
-                            HapticFeedback.mediumImpact();
-                            _durationNotifier.value = m;
-                            _durationController.animateToItem(
-                              m - 1,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.decelerate,
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 120,
-            child: _wheelColumn(
-              _durationController,
-              120,
-              _durationNotifier,
-              'min',
-              offset: 1,
-            ),
-          ),
-        ],
+    return SizedBox(
+      height: 140,
+      child: _wheelColumn(
+        _durationController,
+        120,
+        _durationNotifier,
+        'min',
+        offset: 1,
       ),
     );
   }
@@ -425,23 +343,14 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         controller: controller,
         itemExtent: _itemExtent,
         physics: const FixedExtentScrollPhysics(),
-        onSelectedItemChanged: (i) {
-          HapticFeedback.selectionClick();
-          notifier.value = i + offset;
-        },
+        onSelectedItemChanged: (i) => notifier.value = i + offset,
         childDelegate: ListWheelChildBuilderDelegate(
           childCount: count,
           builder: (_, i) {
             String val = (i + offset).toString();
             if (pad) val = val.padLeft(2, '0');
             return Center(
-              child: Text(
-                '$val $label',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              child: Text('$val $label', style: const TextStyle(fontSize: 18)),
             );
           },
         ),
@@ -459,10 +368,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         controller: controller,
         itemExtent: _itemExtent,
         physics: const FixedExtentScrollPhysics(),
-        onSelectedItemChanged: (i) {
-          HapticFeedback.selectionClick();
-          notifier.value = options[i];
-        },
+        onSelectedItemChanged: (i) => notifier.value = options[i],
         childDelegate: ListWheelChildBuilderDelegate(
           childCount: options.length,
           builder: (_, i) => Center(
@@ -477,41 +383,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Column(
-      children: [
-        OutlinedButton.icon(
-          onPressed: NotificationService.testAlarm,
-          icon: const Icon(Icons.notifications_active),
-          label: const Text('Test Alarm Sound'),
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        ElevatedButton(
-          onPressed: _saveHabit,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.deepPurple,
-            foregroundColor: Colors.white,
-            minimumSize: const Size(double.infinity, 60),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 2,
-          ),
-          child: Text(
-            widget.habitToEdit == null ? 'Create Habit' : 'Save Changes',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ],
     );
   }
 }

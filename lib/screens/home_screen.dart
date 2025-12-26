@@ -69,20 +69,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     color: Colors.white,
                   ),
                 ),
-                centerTitle: true,
                 background: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
                       colors: [Colors.deepPurple, Colors.deepPurple.shade800],
-                    ),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.auto_graph_rounded,
-                      size: 80,
-                      color: Colors.white.withOpacity(0.2),
                     ),
                   ),
                 ),
@@ -94,146 +84,177 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('Error: $error')),
           data: (habits) {
-            if (habits.isEmpty) return _buildEmptyState(context);
+            if (habits.isEmpty) return _buildEmptyState();
 
-            return ListView.builder(
+            final activeHabits = habits.where((h) => !h.isArchived).toList();
+            final archivedHabits = habits.where((h) => h.isArchived).toList();
+
+            return ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-              itemCount: habits.length,
-              itemBuilder: (context, index) {
-                final habit = habits[index];
-                final isDoneToday = habit.isCompletedToday;
-                final isActive = habit.isActiveNow;
-
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 400),
-                  curve: Curves.easeInOut,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => DetailScreen(habit: habit),
-                        ),
-                      );
-                    },
-                    child: Card(
-                      elevation: isActive ? 12 : (isDoneToday ? 2 : 6),
-                      color: isActive
-                          ? Colors.deepPurple.shade50
-                          : (isDoneToday ? Colors.green.shade50 : Colors.white),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: isActive
-                            ? const BorderSide(color: Colors.deepPurple, width: 2)
-                            : (isDoneToday
-                                ? BorderSide(
-                                    color: Colors.green.shade300,
-                                    width: 2,
-                                  )
-                                : BorderSide.none),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Hero(
-                                    tag: 'habit_name_${habit.id}',
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: Text(
-                                        habit.name,
-                                        style: Theme.of(context).textTheme.titleLarge
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 24,
-                                            ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete_rounded,
-                                    color: Colors.redAccent,
-                                  ),
-                                  onPressed: () {
-                                    HapticFeedback.mediumImpact();
-                                    _showDeleteDialog(context, habit);
-                                  },
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                _buildInfoChip(
-                                  Icons.access_time,
-                                  _formatTime(habit.startTime),
-                                ),
-                                const SizedBox(width: 12),
-                                _buildInfoChip(
-                                  Icons.timer,
-                                  '${habit.durationMinutes} min',
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            _buildStreakRow(habit),
-                            if (isActive && !isDoneToday) ...[
-                              const SizedBox(height: 16),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    HapticFeedback.lightImpact();
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            FocusTimerScreen(habit: habit),
-                                        fullscreenDialog: true,
-                                      ),
-                                    );
-                                  },
-                                  icon: const Icon(Icons.bolt_rounded),
-                                  label: const Text(
-                                    'ENTER FOCUS SESSION',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.deepPurple,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 16),
-                            _buildMarkDoneButton(context, habit),
-                          ],
-                        ),
+              children: [
+                if (activeHabits.isNotEmpty) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'ACTIVE CHALLENGES',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                        letterSpacing: 1.1,
                       ),
                     ),
                   ),
-                );
-              },
+                  ...activeHabits.map((h) => _buildHabitCard(context, h)),
+                ],
+                if (archivedHabits.isNotEmpty) ...[
+                  const Padding(
+                    padding: EdgeInsets.only(top: 24, bottom: 8),
+                    child: Text(
+                      'COMPLETED JOURNEYS 🏆',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                  ),
+                  ...archivedHabits.map(
+                    (h) => _buildHabitCard(context, h, isArchived: true),
+                  ),
+                ],
+              ],
             );
           },
         ),
       ),
       floatingActionButton: _buildFab(context),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
+  }
+
+  Widget _buildHabitCard(
+    BuildContext context,
+    Habit habit, {
+    bool isArchived = false,
+  }) {
+    final isDoneToday = habit.isCompletedToday;
+    final isActive = habit.isActiveNow && !isArchived;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 400),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
+          );
+        },
+        child: Card(
+          elevation: isActive ? 12 : 2,
+          color: isArchived
+              ? Colors.grey.shade100
+              : (isActive
+                    ? Colors.deepPurple.shade50
+                    : (isDoneToday ? Colors.green.shade50 : Colors.white)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: isActive
+                ? const BorderSide(color: Colors.deepPurple, width: 2)
+                : BorderSide.none,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Hero(
+                        tag: 'habit_name_${habit.id}',
+                        child: Material(
+                          color: Colors.transparent,
+                          child: Text(
+                            habit.name,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              decoration: isArchived
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (!isArchived)
+                      IconButton(
+                        icon: const Icon(
+                          Icons.delete_rounded,
+                          color: Colors.redAccent,
+                        ),
+                        onPressed: () => _showDeleteDialog(context, habit),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _buildInfoChip(
+                      Icons.access_time,
+                      _formatTime(habit.startTime),
+                    ),
+                    const SizedBox(width: 12),
+                    _buildInfoChip(
+                      Icons.flag_outlined,
+                      '${habit.targetDays} days',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                if (!isArchived) ...[
+                  _buildStreakRow(habit),
+                  const SizedBox(height: 16),
+                  if (isActive && !isDoneToday) ...[
+                    ElevatedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FocusTimerScreen(habit: habit),
+                          fullscreenDialog: true,
+                        ),
+                      ),
+                      icon: const Icon(Icons.bolt_rounded),
+                      label: const Text('ENTER FOCUS SESSION'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  _buildMarkDoneButton(habit),
+                ] else
+                  const Center(
+                    child: Text(
+                      'Completed successfully! 🎉',
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -260,145 +281,68 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildStreakRow(Habit habit) {
-    return Row(
+  Widget _buildStreakRow(Habit habit) => Row(
+    children: [
+      Icon(
+        Icons.whatshot_outlined,
+        color: habit.currentStreak > 0 ? Colors.orangeAccent : Colors.grey,
+      ),
+      const SizedBox(width: 10),
+      Text(
+        'Streak: ${habit.currentStreak} days',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: habit.currentStreak > 0 ? Colors.orange[800] : Colors.grey,
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildMarkDoneButton(Habit habit) => SizedBox(
+    width: double.infinity,
+    child: ElevatedButton.icon(
+      onPressed: () =>
+          ref.read(habitsProvider.notifier).toggleDoneToday(habit.id),
+      icon: Icon(habit.isCompletedToday ? Icons.undo : Icons.check_circle),
+      label: Text(habit.isCompletedToday ? 'Undo Completion' : 'Mark as Done'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: habit.isCompletedToday
+            ? Colors.orange.shade600
+            : Colors.deepPurple,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    ),
+  );
+
+  Widget _buildInfoChip(IconData icon, String label) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    decoration: BoxDecoration(
+      color: Colors.grey.shade100,
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Row(
       children: [
-        Icon(
-          Icons.whatshot_outlined,
-          size: 36,
-          color: habit.currentStreak > 0
-              ? Colors.orangeAccent
-              : Colors.grey[400],
-        ),
-        const SizedBox(width: 10),
-        Text(
-          habit.currentStreak == 0
-              ? 'Start your streak today'
-              : 'Current streak: ${habit.currentStreak} day${habit.currentStreak == 1 ? "" : "s"}',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: habit.currentStreak > 0
-                ? Colors.orange[800]
-                : Colors.grey[600],
-          ),
-        ),
+        Icon(icon, size: 18),
+        const SizedBox(width: 6),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
       ],
-    );
-  }
+    ),
+  );
 
-  Widget _buildMarkDoneButton(BuildContext context, Habit habit) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () {
-          HapticFeedback.mediumImpact();
-          ref.read(habitsProvider.notifier).toggleDoneToday(habit.id);
-        },
-        icon: Icon(
-          habit.isCompletedToday
-              ? Icons.undo_rounded
-              : Icons.check_circle_outline,
-          size: 28,
-        ),
-        label: Text(
-          habit.isCompletedToday ? 'Undo Completion' : 'Mark as Done',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: habit.isCompletedToday
-              ? Colors.orange.shade600
-              : Colors.deepPurple,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildFab(BuildContext context) => FloatingActionButton.extended(
+    onPressed: () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
+    ),
+    backgroundColor: Colors.deepPurple,
+    icon: const Icon(Icons.add, color: Colors.white),
+    label: const Text(
+      'Add Habit',
+      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    ),
+  );
 
-  Widget _buildFab(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: () {
-        HapticFeedback.lightImpact();
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
-        );
-      },
-      backgroundColor: Colors.deepPurple,
-      icon: const Icon(Icons.add, color: Colors.white),
-      label: const Text(
-        'Add Habit',
-        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildInfoChip(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: Colors.grey[700]),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[700],
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: Colors.deepPurple.shade50,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.auto_graph_rounded,
-                size: 80,
-                color: Colors.deepPurple.shade200,
-              ),
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              'No habits yet',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Your journey to a better you starts here.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildEmptyState() =>
+      const Center(child: Text('No habits yet. Start your journey!'));
 }
