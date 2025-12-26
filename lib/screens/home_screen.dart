@@ -7,6 +7,7 @@ import 'package:habit_builder/screens/add_edit_habit_screen.dart';
 import 'package:habit_builder/screens/detail_screen.dart';
 import 'package:habit_builder/screens/focus_timer_screen.dart';
 import 'package:habit_builder/models/habit.dart';
+import 'package:habit_builder/widgets/mini_streak_grid.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -143,7 +144,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final isDoneToday = habit.isCompletedToday;
     final isActive = habit.isActiveNow && !isArchived;
 
-    // Simplified view for archived habits
+    // Simplified view for archived habits: Just Name and Status
     if (isArchived) {
       return Card(
         margin: const EdgeInsets.only(bottom: 12),
@@ -238,8 +239,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
                 const SizedBox(height: 16),
 
-                // Progress stats shown only for active habits
                 _buildProgressStats(habit),
+
+                const SizedBox(height: 16),
+                Text(
+                  'Journey Grid (${habit.targetDays} Days)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Compact square grid
+                SizedBox(width: 120, child: MiniStreakGrid(habit: habit)),
 
                 const SizedBox(height: 20),
                 _buildStreakRow(habit),
@@ -292,7 +305,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Overall Progress',
+              'Completion Rate',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
