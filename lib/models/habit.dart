@@ -34,7 +34,33 @@ class Habit {
          _filterFutureDates(completedDates ?? []),
        );
 
-  // Logic to check if the goal duration is reached
+  // Phase 2 Logic: Completion Statistics
+  double get completionPercentage {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+
+    // Total days elapsed since start (including today)
+    final daysElapsed = today.difference(start).inDays + 1;
+    if (daysElapsed <= 0) return 0.0;
+
+    final completionCount = completedDates.length;
+    final percentage = completionCount / daysElapsed;
+    return percentage > 1.0 ? 1.0 : percentage;
+  }
+
+  int get missDaysCount {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+
+    final totalDaysElapsed = today.difference(start).inDays + 1;
+    final completions = completedDates.length;
+
+    final misses = totalDaysElapsed - completions;
+    return misses < 0 ? 0 : misses;
+  }
+
   bool get isArchived {
     final endDate = startDate.add(Duration(days: targetDays));
     return DateTime.now().isAfter(endDate);

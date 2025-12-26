@@ -69,9 +69,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     color: Colors.white,
                   ),
                 ),
+                centerTitle: true,
                 background: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                       colors: [Colors.deepPurple, Colors.deepPurple.shade800],
                     ),
                   ),
@@ -94,7 +97,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               children: [
                 if (activeHabits.isNotEmpty) ...[
                   const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
+                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                     child: Text(
                       'ACTIVE CHALLENGES',
                       style: TextStyle(
@@ -159,7 +162,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ? Colors.deepPurple.shade50
                     : (isDoneToday ? Colors.green.shade50 : Colors.white)),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
             side: isActive
                 ? const BorderSide(color: Colors.deepPurple, width: 2)
                 : BorderSide.none,
@@ -179,7 +182,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           child: Text(
                             habit.name,
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
                               decoration: isArchived
                                   ? TextDecoration.lineThrough
@@ -194,44 +197,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         icon: const Icon(
                           Icons.delete_rounded,
                           color: Colors.redAccent,
+                          size: 20,
                         ),
                         onPressed: () => _showDeleteDialog(context, habit),
                       ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     _buildInfoChip(
                       Icons.access_time,
                       _formatTime(habit.startTime),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     _buildInfoChip(
                       Icons.flag_outlined,
                       '${habit.targetDays} days',
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
+
+                // Phase 2: Progress Stats Section
+                _buildProgressStats(habit),
+
                 const SizedBox(height: 20),
                 if (!isArchived) ...[
                   _buildStreakRow(habit),
                   const SizedBox(height: 16),
                   if (isActive && !isDoneToday) ...[
                     ElevatedButton.icon(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => FocusTimerScreen(habit: habit),
-                          fullscreenDialog: true,
-                        ),
-                      ),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FocusTimerScreen(habit: habit),
+                            fullscreenDialog: true,
+                          ),
+                        );
+                      },
                       icon: const Icon(Icons.bolt_rounded),
-                      label: const Text('ENTER FOCUS SESSION'),
+                      label: const Text(
+                        'ENTER FOCUS SESSION',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepPurple,
                         foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 50),
+                        minimumSize: const Size(double.infinity, 54),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -255,6 +270,69 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildProgressStats(Habit habit) {
+    final percentage = habit.completionPercentage;
+    final displayPercent = (percentage * 100).toInt();
+    final misses = habit.missDaysCount;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Overall Progress',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+            Text(
+              '$displayPercent%',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: LinearProgressIndicator(
+            value: percentage,
+            backgroundColor: Colors.deepPurple.withOpacity(0.1),
+            valueColor: const AlwaysStoppedAnimation<Color>(Colors.deepPurple),
+            minHeight: 8,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              size: 16,
+              color: misses > 0 ? Colors.redAccent : Colors.grey,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              misses == 0
+                  ? 'No misses yet!'
+                  : '$misses day${misses == 1 ? "" : "s"} missed',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: misses > 0 ? Colors.redAccent : Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -285,14 +363,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     children: [
       Icon(
         Icons.whatshot_outlined,
-        color: habit.currentStreak > 0 ? Colors.orangeAccent : Colors.grey,
+        size: 28,
+        color: habit.currentStreak > 0 ? Colors.orangeAccent : Colors.grey[400],
       ),
-      const SizedBox(width: 10),
+      const SizedBox(width: 8),
       Text(
-        'Streak: ${habit.currentStreak} days',
+        'Current Streak: ${habit.currentStreak} day${habit.currentStreak == 1 ? "" : "s"}',
         style: TextStyle(
+          fontSize: 16,
           fontWeight: FontWeight.bold,
-          color: habit.currentStreak > 0 ? Colors.orange[800] : Colors.grey,
+          color: habit.currentStreak > 0
+              ? Colors.orange[800]
+              : Colors.grey[600],
         ),
       ),
     ],
@@ -301,40 +383,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget _buildMarkDoneButton(Habit habit) => SizedBox(
     width: double.infinity,
     child: ElevatedButton.icon(
-      onPressed: () =>
-          ref.read(habitsProvider.notifier).toggleDoneToday(habit.id),
-      icon: Icon(habit.isCompletedToday ? Icons.undo : Icons.check_circle),
-      label: Text(habit.isCompletedToday ? 'Undo Completion' : 'Mark as Done'),
+      onPressed: () {
+        HapticFeedback.mediumImpact();
+        ref.read(habitsProvider.notifier).toggleDoneToday(habit.id);
+      },
+      icon: Icon(
+        habit.isCompletedToday
+            ? Icons.undo_rounded
+            : Icons.check_circle_outline,
+        size: 24,
+      ),
+      label: Text(
+        habit.isCompletedToday ? 'Undo Completion' : 'Mark as Done',
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
       style: ElevatedButton.styleFrom(
         backgroundColor: habit.isCompletedToday
             ? Colors.orange.shade600
             : Colors.deepPurple,
         foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     ),
   );
 
   Widget _buildInfoChip(IconData icon, String label) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     decoration: BoxDecoration(
       color: Colors.grey.shade100,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(12),
     ),
     child: Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 18),
-        const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Icon(icon, size: 14, color: Colors.grey[700]),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
       ],
     ),
   );
 
   Widget _buildFab(BuildContext context) => FloatingActionButton.extended(
-    onPressed: () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
-    ),
+    onPressed: () {
+      HapticFeedback.lightImpact();
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
+      );
+    },
     backgroundColor: Colors.deepPurple,
     icon: const Icon(Icons.add, color: Colors.white),
     label: const Text(
@@ -343,6 +447,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     ),
   );
 
-  Widget _buildEmptyState() =>
-      const Center(child: Text('No habits yet. Start your journey!'));
+  Widget _buildEmptyState() => Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.auto_graph_rounded, size: 64, color: Colors.grey[300]),
+        const SizedBox(height: 16),
+        Text(
+          'No habits yet. Start your journey!',
+          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+        ),
+      ],
+    ),
+  );
 }
