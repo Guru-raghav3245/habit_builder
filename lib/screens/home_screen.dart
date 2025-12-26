@@ -143,6 +143,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final isDoneToday = habit.isCompletedToday;
     final isActive = habit.isActiveNow && !isArchived;
 
+    // Simplified view for archived habits
+    if (isArchived) {
+      return Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        color: Colors.grey.shade100,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 8,
+          ),
+          title: Text(
+            habit.name,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              decoration: TextDecoration.lineThrough,
+              color: Colors.grey,
+            ),
+          ),
+          trailing: const Icon(Icons.check_circle, color: Colors.green),
+          subtitle: const Text('Goal Reached!'),
+        ),
+      );
+    }
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
       margin: const EdgeInsets.only(bottom: 16),
@@ -156,11 +181,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         },
         child: Card(
           elevation: isActive ? 12 : 2,
-          color: isArchived
-              ? Colors.grey.shade100
-              : (isActive
-                    ? Colors.deepPurple.shade50
-                    : (isDoneToday ? Colors.green.shade50 : Colors.white)),
+          color: isActive
+              ? Colors.deepPurple.shade50
+              : (isDoneToday ? Colors.green.shade50 : Colors.white),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
             side: isActive
@@ -181,26 +204,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           color: Colors.transparent,
                           child: Text(
                             habit.name,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              decoration: isArchived
-                                  ? TextDecoration.lineThrough
-                                  : null,
                             ),
                           ),
                         ),
                       ),
                     ),
-                    if (!isArchived)
-                      IconButton(
-                        icon: const Icon(
-                          Icons.delete_rounded,
-                          color: Colors.redAccent,
-                          size: 20,
-                        ),
-                        onPressed: () => _showDeleteDialog(context, habit),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_rounded,
+                        color: Colors.redAccent,
+                        size: 20,
                       ),
+                      onPressed: () => _showDeleteDialog(context, habit),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -219,52 +238,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
                 const SizedBox(height: 16),
 
-                // Phase 2: Progress Stats Section
+                // Progress stats shown only for active habits
                 _buildProgressStats(habit),
 
                 const SizedBox(height: 20),
-                if (!isArchived) ...[
-                  _buildStreakRow(habit),
-                  const SizedBox(height: 16),
-                  if (isActive && !isDoneToday) ...[
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => FocusTimerScreen(habit: habit),
-                            fullscreenDialog: true,
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.bolt_rounded),
-                      label: const Text(
-                        'ENTER FOCUS SESSION',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 54),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                _buildStreakRow(habit),
+                const SizedBox(height: 16),
+                if (isActive && !isDoneToday) ...[
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FocusTimerScreen(habit: habit),
+                          fullscreenDialog: true,
                         ),
-                      ),
+                      );
+                    },
+                    icon: const Icon(Icons.bolt_rounded),
+                    label: const Text(
+                      'ENTER FOCUS SESSION',
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 12),
-                  ],
-                  _buildMarkDoneButton(habit),
-                ] else
-                  const Center(
-                    child: Text(
-                      'Completed successfully! 🎉',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 54),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                ],
+                _buildMarkDoneButton(habit),
               ],
             ),
           ),
