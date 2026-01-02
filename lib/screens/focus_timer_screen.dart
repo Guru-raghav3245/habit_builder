@@ -179,14 +179,25 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                     ),
                   ),
                 ),
+
+                // lib/screens/focus_timer_screen.dart
+
+                // ... inside the build method, replace the existing Padding/GestureDetector block:
                 Padding(
                   padding: const EdgeInsets.only(bottom: 80),
                   child: GestureDetector(
-                    onLongPressStart: (_) {
+                    // Changed to onTapDown for instant feedback
+                    onTapDown: (_) {
                       _holdController.forward();
                       HapticFeedback.lightImpact();
                     },
-                    onLongPressEnd: (_) {
+                    // Changed to onTapUp/onTapCancel to catch all exit conditions
+                    onTapUp: (_) {
+                      if (_holdController.status != AnimationStatus.completed) {
+                        _holdController.reverse();
+                      }
+                    },
+                    onTapCancel: () {
                       if (_holdController.status != AnimationStatus.completed) {
                         _holdController.reverse();
                       }
@@ -194,6 +205,11 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                     child: AnimatedBuilder(
                       animation: _holdController,
                       builder: (context, child) {
+                        // isAnimating or value > 0 ensures the text swaps instantly on touch
+                        final isHolding =
+                            _holdController.isAnimating ||
+                            _holdController.value > 0;
+
                         return Container(
                           padding: const EdgeInsets.symmetric(
                             vertical: 18,
@@ -217,13 +233,9 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                             ),
                           ),
                           child: Text(
-                            _holdController.value > 0.1
-                                ? 'HOLDING...'
-                                : 'HOLD TO GIVE UP',
+                            isHolding ? 'HOLDING...' : 'HOLD TO GIVE UP',
                             style: TextStyle(
-                              color: _holdController.value > 0.1
-                                  ? Colors.white
-                                  : Colors.red,
+                              color: isHolding ? Colors.white : Colors.red,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.5,
