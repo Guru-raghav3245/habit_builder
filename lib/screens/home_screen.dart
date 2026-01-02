@@ -150,10 +150,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         color: Colors.grey.shade100,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 8,
-          ),
+          dense: true,
           title: Text(
             habit.name,
             style: const TextStyle(
@@ -162,16 +159,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               color: Colors.grey,
             ),
           ),
-          trailing: const Icon(Icons.check_circle, color: Colors.green),
+          trailing: const Icon(Icons.stars, color: Colors.green, size: 20),
           subtitle: const Text('Goal Reached!'),
         ),
       );
     }
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 400),
-      margin: const EdgeInsets.only(bottom: 16),
-      child: GestureDetector(
+    return Card(
+      elevation: isActive ? 8 : 1,
+      margin: const EdgeInsets.only(bottom: 12),
+      color: isDoneToday ? Colors.green.shade50 : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: isActive
+            ? const BorderSide(color: Colors.deepPurple, width: 1.5)
+            : BorderSide(color: Colors.grey.shade200),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
         onTap: () {
           HapticFeedback.selectionClick();
           Navigator.push(
@@ -179,118 +184,157 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
           );
         },
-        child: Card(
-          elevation: isActive ? 12 : 2,
-          color: isActive
-              ? Colors.deepPurple.shade50
-              : (isDoneToday ? Colors.green.shade50 : Colors.white),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: isActive
-                ? const BorderSide(color: Colors.deepPurple, width: 2)
-                : BorderSide.none,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Hero(
-                        tag: 'habit_name_${habit.id}',
-                        child: Material(
-                          color: Colors.transparent,
-                          child: Text(
-                            habit.name,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- ROW 1: Name and Delete ---
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Hero(
+                      tag: 'habit_name_${habit.id}',
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Text(
+                          habit.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.delete_rounded,
-                        color: Colors.redAccent,
-                        size: 20,
-                      ),
-                      onPressed: () => _showDeleteDialog(context, habit),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _buildInfoChip(
-                      Icons.access_time,
-                      _formatTime(habit.startTime),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildInfoChip(
-                      Icons.flag_outlined,
-                      '${habit.targetDays} days',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildProgressStats(habit),
-                const SizedBox(height: 16),
-                Text(
-                  'Journey Grid (${habit.targetDays} Days)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[600],
                   ),
-                ),
-                const SizedBox(height: 8),
-                // Grid that handles many days (like 76) using Wrap
-                MiniStreakGrid(habit: habit),
-                const SizedBox(height: 20),
-                _buildStreakRow(habit),
-                const SizedBox(height: 16),
-                if (isActive && !isDoneToday) ...[
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => FocusTimerScreen(habit: habit),
-                          fullscreenDialog: true,
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.bolt_rounded),
-                    label: const Text(
-                      'ENTER FOCUS SESSION',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 54),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
+                  const SizedBox(width: 8),
+                  _buildInfoChip(
+                    Icons.access_time,
+                    _formatTime(habit.startTime),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: const Icon(Icons.close, color: Colors.grey, size: 18),
+                    onPressed: () => _showDeleteDialog(context, habit),
+                  ),
                 ],
-                _buildMarkDoneButton(habit),
-              ],
-            ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // --- ROW 2: Progress Bar & Stats ---
+              _buildCompactProgress(habit),
+
+              const SizedBox(height: 12),
+
+              // --- ROW 3: Journey Grid (The existing functionality intact) ---
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: MiniStreakGrid(habit: habit),
+              ),
+
+              const SizedBox(height: 12),
+
+              // --- ROW 4: Action Buttons ---
+              Row(
+                children: [
+                  // Current Streak Indicator
+                  Icon(
+                    Icons.whatshot,
+                    size: 16,
+                    color: habit.currentStreak > 0
+                        ? Colors.orange
+                        : Colors.grey,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${habit.currentStreak}d streak',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: habit.currentStreak > 0
+                          ? Colors.orange.shade900
+                          : Colors.grey,
+                    ),
+                  ),
+                  const Spacer(),
+                  // Focus Session Button (Only if Active)
+                  if (isActive && !isDoneToday)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: TextButton.icon(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => FocusTimerScreen(habit: habit),
+                              fullscreenDialog: true,
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.bolt_rounded, size: 18),
+                        label: const Text('FOCUS'),
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                          visualDensity: VisualDensity.compact,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  // Mark Done / Undo Button
+                  SizedBox(
+                    height: 36,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        ref
+                            .read(habitsProvider.notifier)
+                            .toggleDoneToday(habit.id);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDoneToday
+                            ? Colors.orange
+                            : Colors.deepPurple,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      child: Text(
+                        isDoneToday ? 'UNDO' : 'DONE',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildProgressStats(Habit habit) {
+  Widget _buildCompactProgress(Habit habit) {
     final percentage = habit.completionPercentage;
     final displayPercent = (percentage * 100).toInt();
     final misses = habit.missDaysCount;
@@ -298,55 +342,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Column(
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Completion Rate',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: percentage,
+                  backgroundColor: Colors.deepPurple.withOpacity(0.1),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Colors.deepPurple,
+                  ),
+                  minHeight: 4,
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             Text(
               '$displayPercent%',
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
                 color: Colors.deepPurple,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: LinearProgressIndicator(
-            value: percentage,
-            backgroundColor: Colors.deepPurple.withOpacity(0.1),
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.deepPurple),
-            minHeight: 8,
-          ),
-        ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 4),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              size: 16,
-              color: misses > 0 ? Colors.redAccent : Colors.grey,
-            ),
-            const SizedBox(width: 4),
             Text(
-              misses == 0
-                  ? 'No misses yet!'
-                  : '$misses day${misses == 1 ? "" : "s"} missed',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: misses > 0 ? Colors.redAccent : Colors.grey[600],
-              ),
+              '${habit.targetDays} day challenge',
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
             ),
+            if (misses > 0)
+              Text(
+                '$misses missed',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
           ],
         ),
       ],
@@ -375,55 +412,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
     );
   }
-
-  Widget _buildStreakRow(Habit habit) => Row(
-    children: [
-      Icon(
-        Icons.whatshot_outlined,
-        size: 28,
-        color: habit.currentStreak > 0 ? Colors.orangeAccent : Colors.grey[400],
-      ),
-      const SizedBox(width: 8),
-      Text(
-        'Current Streak: ${habit.currentStreak} day${habit.currentStreak == 1 ? "" : "s"}',
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: habit.currentStreak > 0
-              ? Colors.orange[800]
-              : Colors.grey[600],
-        ),
-      ),
-    ],
-  );
-
-  Widget _buildMarkDoneButton(Habit habit) => SizedBox(
-    width: double.infinity,
-    child: ElevatedButton.icon(
-      onPressed: () {
-        HapticFeedback.mediumImpact();
-        ref.read(habitsProvider.notifier).toggleDoneToday(habit.id);
-      },
-      icon: Icon(
-        habit.isCompletedToday
-            ? Icons.undo_rounded
-            : Icons.check_circle_outline,
-        size: 24,
-      ),
-      label: Text(
-        habit.isCompletedToday ? 'Undo Completion' : 'Mark as Done',
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: habit.isCompletedToday
-            ? Colors.orange.shade600
-            : Colors.deepPurple,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-    ),
-  );
 
   Widget _buildInfoChip(IconData icon, String label) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
