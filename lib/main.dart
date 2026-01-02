@@ -20,17 +20,14 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
-        // Enhanced page transitions for smoother navigation
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
-            TargetPlatform.android: ZoomPageTransitionsBuilder(
-              allowSnapshotting: true, // Caches frames for low-end devices
-            ),
+            // Smoothest transition for modern Android/iOS devices
+            TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
           },
         ),
-        // Global animation defaults for ripples and highlights
-        splashFactory: InkSplash.splashFactory,
-        highlightColor: Colors.deepPurple.withOpacity(0.1),
+        splashFactory: InkRipple.splashFactory, // More organic feel
       ),
       home: const HomeScreen(),
     );

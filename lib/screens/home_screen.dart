@@ -189,7 +189,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- ROW 1: Name, Status Indicator, and Delete ---
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
