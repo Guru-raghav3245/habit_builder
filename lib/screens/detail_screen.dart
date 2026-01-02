@@ -29,6 +29,8 @@ class _DetailScreenState extends State<DetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -36,23 +38,12 @@ class _DetailScreenState extends State<DetailScreen>
             SliverAppBar(
               expandedHeight: 150.0,
               pinned: true,
-              backgroundColor: Colors.deepPurple,
-              foregroundColor: Colors.white,
-              elevation: innerBoxIsScrolled ? 4 : 0,
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
               flexibleSpace: FlexibleSpaceBar(
-                title: Hero(
-                  tag: 'habit_name_${widget.habit.id}',
-                  child: Material(
-                    color: Colors.transparent,
-                    child: Text(
-                      widget.habit.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ),
+                title: Text(
+                  widget.habit.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 centerTitle: true,
               ),
@@ -62,30 +53,24 @@ class _DetailScreenState extends State<DetailScreen>
               delegate: _SliverAppBarDelegate(
                 TabBar(
                   controller: _tabController,
-                  labelColor: Colors.deepPurple,
-                  indicatorWeight: 3,
-                  // Smoothly animate to tab on click
-                  onTap: (index) => _tabController.animateTo(index),
+                  labelColor: theme.colorScheme.primary,
+                  unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+                  indicatorColor: theme.colorScheme.primary,
                   tabs: const [
                     Tab(icon: Icon(Icons.settings_outlined), text: 'Settings'),
                     Tab(icon: Icon(Icons.insights_rounded), text: 'Progress'),
                   ],
                 ),
+                theme.colorScheme.surface,
               ),
             ),
           ];
         },
         body: TabBarView(
           controller: _tabController,
-          physics: const BouncingScrollPhysics(), // Makes swiping feel organic
           children: [
-            _KeepAliveWrapper(
-              child: AddEditHabitScreen(
-                habitToEdit: widget.habit,
-                isEmbedded: true,
-              ),
-            ),
-            _KeepAliveWrapper(child: ProgressScreen(habit: widget.habit)),
+            AddEditHabitScreen(habitToEdit: widget.habit, isEmbedded: true),
+            ProgressScreen(habit: widget.habit),
           ],
         ),
       ),
@@ -93,27 +78,10 @@ class _DetailScreenState extends State<DetailScreen>
   }
 }
 
-class _KeepAliveWrapper extends StatefulWidget {
-  final Widget child;
-  const _KeepAliveWrapper({required this.child});
-  @override
-  State<_KeepAliveWrapper> createState() => _KeepAliveWrapperState();
-}
-
-class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    return widget.child;
-  }
-}
-
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverAppBarDelegate(this._tabBar);
+  _SliverAppBarDelegate(this._tabBar, this.bgColor);
   final TabBar _tabBar;
+  final Color bgColor;
   @override
   double get minExtent => _tabBar.preferredSize.height;
   @override
@@ -123,7 +91,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     BuildContext context,
     double shrinkOffset,
     bool overlapsContent,
-  ) => Container(color: Colors.white, child: _tabBar);
+  ) => Container(color: bgColor, child: _tabBar);
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
 }

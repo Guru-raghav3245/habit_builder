@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:habit_builder/providers/habits_provider.dart';
+import 'package:habit_builder/providers/settings_provider.dart';
 import 'package:habit_builder/screens/add_edit_habit_screen.dart';
 import 'package:habit_builder/screens/detail_screen.dart';
 import 'package:habit_builder/screens/focus_timer_screen.dart';
@@ -49,9 +50,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return DateFormat('h:mm a').format(dateTime);
   }
 
+  void _showThemeSettings(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => const ThemeSettingsSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final habitsAsync = ref.watch(habitsProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
       body: NestedScrollView(
@@ -61,14 +74,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               expandedHeight: 180.0,
               pinned: true,
               stretch: true,
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.palette_outlined),
+                  onPressed: () => _showThemeSettings(context),
+                ),
+              ],
               flexibleSpace: FlexibleSpaceBar(
                 title: const Text(
                   'My Daily Habits',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 centerTitle: true,
                 background: Container(
@@ -76,7 +93,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Colors.deepPurple, Colors.deepPurple.shade800],
+                      colors: [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.primaryContainer,
+                      ],
                     ),
                   ),
                 ),
@@ -89,7 +109,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           error: (error, _) => Center(child: Text('Error: $error')),
           data: (habits) {
             if (habits.isEmpty) return _buildEmptyState();
-
             final activeHabits = habits.where((h) => !h.isArchived).toList();
             final archivedHabits = habits.where((h) => h.isArchived).toList();
 
@@ -103,7 +122,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       'ACTIVE CHALLENGES',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.black54,
+                        color: Colors.grey,
                         letterSpacing: 1.1,
                       ),
                     ),
@@ -141,56 +160,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     Habit habit, {
     bool isArchived = false,
   }) {
+    final theme = Theme.of(context);
     final isDoneToday = habit.isCompletedToday;
     final isActive = habit.isActiveNow && !isArchived;
 
-    if (isArchived) {
-      return Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        color: Colors.grey.shade100,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ListTile(
-          dense: true,
-          title: Text(
-            habit.name,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              decoration: TextDecoration.lineThrough,
-              color: Colors.grey,
-            ),
-          ),
-          trailing: const Icon(Icons.stars, color: Colors.green, size: 20),
-          subtitle: const Text('Goal Reached!'),
-        ),
-      );
-    }
-
     return Card(
-      elevation: isActive ? 8 : 1,
+      elevation: isActive ? 4 : 1,
       margin: const EdgeInsets.only(bottom: 12),
-      color: Colors.white, // Static white background as requested
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: isActive
-            ? const BorderSide(color: Colors.deepPurple, width: 1.5)
-            : BorderSide(color: Colors.grey.shade200),
+            ? BorderSide(color: theme.colorScheme.primary, width: 1.5)
+            : BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        onTap: () {
-          HapticFeedback.selectionClick();
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
-          );
-        },
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   if (isDoneToday)
                     const Padding(
@@ -202,58 +196,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       ),
                     ),
                   Expanded(
-                    child: Hero(
-                      tag: 'habit_name_${habit.id}',
-                      child: Material(
-                        color: Colors.transparent,
-                        child: Text(
-                          habit.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isDoneToday ? Colors.grey : Colors.black87,
-                          ),
-                        ),
+                    child: Text(
+                      habit.name,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isDoneToday
+                            ? Colors.grey
+                            : theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
                   _buildInfoChip(
+                    context,
                     isDoneToday ? Icons.task_alt : Icons.access_time,
                     _formatTime(habit.startTime),
                   ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: const Icon(Icons.close, color: Colors.grey, size: 18),
-                    onPressed: () => _showDeleteDialog(context, habit),
-                  ),
                 ],
               ),
-
               const SizedBox(height: 12),
-
-              // --- ROW 2: Compact Progress Bar ---
-              _buildCompactProgress(habit),
-
+              _buildCompactProgress(context, habit),
               const SizedBox(height: 12),
-
-              // --- ROW 3: Journey Grid (Functionality Intact) ---
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: MiniStreakGrid(habit: habit), //
-              ),
-
+              MiniStreakGrid(habit: habit),
               const SizedBox(height: 12),
-
-              // --- ROW 4: Action Buttons and Streak ---
               Row(
                 children: [
                   Icon(
@@ -270,65 +235,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: habit.currentStreak > 0
-                          ? Colors.orange.shade900
+                          ? Colors.orange
                           : Colors.grey,
                     ),
                   ),
                   const Spacer(),
                   if (isActive && !isDoneToday)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: TextButton.icon(
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => FocusTimerScreen(habit: habit), //
-                              fullscreenDialog: true,
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.bolt_rounded, size: 18),
-                        label: const Text('FOCUS'),
-                        style: TextButton.styleFrom(
-                          backgroundColor: Colors.deepPurple,
-                          foregroundColor: Colors.white,
-                          visualDensity: VisualDensity.compact,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                    TextButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FocusTimerScreen(habit: habit),
+                          fullscreenDialog: true,
                         ),
                       ),
-                    ),
-                  SizedBox(
-                    height: 36,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        HapticFeedback.mediumImpact();
-                        ref
-                            .read(habitsProvider.notifier)
-                            .toggleDoneToday(habit.id); //
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDoneToday
-                            ? Colors.orange
-                            : Colors.deepPurple,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
+                      icon: const Icon(Icons.bolt_rounded, size: 18),
+                      label: const Text('FOCUS'),
+                      style: TextButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                      ),
-                      child: Text(
-                        isDoneToday ? 'UNDO' : 'DONE',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
                       ),
                     ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () => ref
+                        .read(habitsProvider.notifier)
+                        .toggleDoneToday(habit.id),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDoneToday
+                          ? Colors.orange
+                          : theme.colorScheme.secondaryContainer,
+                      foregroundColor: isDoneToday
+                          ? Colors.white
+                          : theme.colorScheme.onSecondaryContainer,
+                      elevation: 0,
+                    ),
+                    child: Text(isDoneToday ? 'UNDO' : 'DONE'),
                   ),
                 ],
               ),
@@ -339,38 +284,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildCompactProgress(Habit habit) {
-    final percentage = habit.completionPercentage; //
-    final displayPercent = (percentage * 100).toInt();
-    final misses = habit.missDaysCount; //
-
+  Widget _buildCompactProgress(BuildContext context, Habit habit) {
+    final theme = Theme.of(context);
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: percentage,
-                  backgroundColor: Colors.deepPurple.withOpacity(0.1),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Colors.deepPurple,
-                  ),
-                  minHeight: 4,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '$displayPercent%',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
-              ),
-            ),
-          ],
+        LinearProgressIndicator(
+          value: habit.completionPercentage,
+          backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+          color: theme.colorScheme.primary,
+          minHeight: 4,
         ),
         const SizedBox(height: 4),
         Row(
@@ -378,16 +300,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           children: [
             Text(
               '${habit.targetDays} day challenge',
-              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 11,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-            if (misses > 0)
-              Text(
-                '$misses missed',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Colors.redAccent,
-                  fontWeight: FontWeight.w500,
-                ),
+            if (habit.missDaysCount > 0)
+              const Text(
+                'Missed days detected',
+                style: TextStyle(fontSize: 11, color: Colors.redAccent),
               ),
           ],
         ),
@@ -395,79 +316,130 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  void _showDeleteDialog(BuildContext context, Habit habit) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete habit?'),
-        content: Text('Are you sure you want to delete "${habit.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+  Widget _buildInfoChip(BuildContext context, IconData icon, String label) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceVariant,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+
+  Widget _buildFab(BuildContext context) => FloatingActionButton.extended(
+    onPressed: () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
+    ),
+    backgroundColor: Theme.of(context).colorScheme.primary,
+    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+    icon: const Icon(Icons.add),
+    label: const Text('Add Habit'),
+  );
+
+  Widget _buildEmptyState() =>
+      const Center(child: Text('No habits yet. Start your journey!'));
+}
+
+class ThemeSettingsSheet extends ConsumerWidget {
+  const ThemeSettingsSheet({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final colors = [
+      Colors.deepPurple,
+      Colors.blue,
+      Colors.teal,
+      Colors.green,
+      Colors.orange,
+      Colors.pink,
+      Colors.red,
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Appearance", style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 20),
+          SegmentedButton<ThemeMode>(
+            segments: const [
+              ButtonSegment(
+                value: ThemeMode.light,
+                icon: Icon(Icons.light_mode),
+                label: Text("Light"),
+              ),
+              ButtonSegment(
+                value: ThemeMode.dark,
+                icon: Icon(Icons.dark_mode),
+                label: Text("Dark"),
+              ),
+              ButtonSegment(
+                value: ThemeMode.system,
+                icon: Icon(Icons.settings),
+                label: Text("System"),
+              ),
+            ],
+            selected: {settings.themeMode},
+            onSelectionChanged: (newSet) =>
+                ref.read(settingsProvider.notifier).setThemeMode(newSet.first),
           ),
-          TextButton(
-            onPressed: () {
-              ref.read(habitsProvider.notifier).deleteHabit(habit.id);
-              Navigator.pop(ctx);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          const SizedBox(height: 24),
+          Text("Accent Color", style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 50,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: colors.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final color = colors[index];
+                final isSelected = settings.seedColor.value == color.value;
+                return GestureDetector(
+                  onTap: () =>
+                      ref.read(settingsProvider.notifier).setSeedColor(color),
+                  child: Container(
+                    width: 50,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: isSelected
+                          ? Border.all(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              width: 3,
+                            )
+                          : null,
+                    ),
+                    child: isSelected
+                        ? const Icon(Icons.check, color: Colors.white)
+                        : null,
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
     );
   }
-
-  Widget _buildInfoChip(IconData icon, String label) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: Colors.grey.shade100,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: Colors.grey[700]),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
-          ),
-        ),
-      ],
-    ),
-  );
-
-  Widget _buildFab(BuildContext context) => FloatingActionButton.extended(
-    onPressed: () {
-      HapticFeedback.lightImpact();
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
-      );
-    },
-    backgroundColor: Colors.deepPurple,
-    icon: const Icon(Icons.add, color: Colors.white),
-    label: const Text(
-      'Add Habit',
-      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-    ),
-  );
-
-  Widget _buildEmptyState() => Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.auto_graph_rounded, size: 64, color: Colors.grey[300]),
-        const SizedBox(height: 16),
-        Text(
-          'No habits yet. Start your journey!',
-          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-        ),
-      ],
-    ),
-  );
 }

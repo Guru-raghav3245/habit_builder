@@ -139,6 +139,8 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     final content = SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Form(
@@ -147,9 +149,11 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildCardWrapper(
+              context: context,
               title: 'General Information',
               children: [
                 _buildTextField(
+                  context: context,
                   controller: _nameController,
                   label: 'Habit Name',
                   hint: 'e.g., Morning Yoga',
@@ -159,6 +163,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                 ),
                 const SizedBox(height: 20),
                 _buildTextField(
+                  context: context,
                   controller: _goalDaysController,
                   label: 'Challenge Duration (Days)',
                   hint: '30',
@@ -169,9 +174,11 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             ),
             const SizedBox(height: 24),
             _buildCardWrapper(
+              context: context,
               title: 'Schedule & Timing',
               children: [
                 _buildExpandablePicker(
+                  context: context,
                   label: 'Start Time',
                   icon: Icons.access_time_filled_rounded,
                   isExpanded: _isTimeExpanded,
@@ -187,19 +194,20 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                         valueListenable: _periodNotifier,
                         builder: (_, p, _) => Text(
                           '$h:${m.toString().padLeft(2, '0')} $p',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
-                            color: Colors.deepPurple,
+                            color: colorScheme.primary,
                           ),
                         ),
                       ),
                     ),
                   ),
-                  expandedChild: _buildTimeWheelPicker(),
+                  expandedChild: _buildTimeWheelPicker(context),
                 ),
                 const Divider(height: 32),
                 _buildExpandablePicker(
+                  context: context,
                   label: 'Focus Session',
                   icon: Icons.timer_rounded,
                   isExpanded: _isDurationExpanded,
@@ -211,14 +219,14 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                     valueListenable: _durationNotifier,
                     builder: (_, d, _) => Text(
                       '$d minutes',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
-                        color: Colors.deepPurple,
+                        color: colorScheme.primary,
                       ),
                     ),
                   ),
-                  expandedChild: _buildDurationWheelPicker(),
+                  expandedChild: _buildDurationWheelPicker(context),
                 ),
               ],
             ),
@@ -226,8 +234,8 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             ElevatedButton(
               onPressed: _saveHabit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
                 minimumSize: const Size(double.infinity, 56),
                 elevation: 2,
                 shape: RoundedRectangleBorder(
@@ -272,13 +280,10 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     return widget.isEmbedded
         ? content
         : Scaffold(
-            backgroundColor: Colors.grey.shade50,
             appBar: AppBar(
               title: Text(
                 widget.habitToEdit == null ? 'New Habit' : 'Edit Habit',
               ),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
               centerTitle: true,
             ),
             body: content,
@@ -286,9 +291,11 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   }
 
   Widget _buildCardWrapper({
+    required BuildContext context,
     required String title,
     required List<Widget> children,
   }) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -296,19 +303,21 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
           padding: const EdgeInsets.only(left: 8, bottom: 8),
           child: Text(
             title.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 12,
+            style: theme.textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.black54,
               letterSpacing: 1.2,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ),
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.04),
@@ -324,6 +333,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   }
 
   Widget _buildTextField({
+    required BuildContext context,
     required TextEditingController controller,
     required String label,
     required String hint,
@@ -331,6 +341,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
@@ -338,22 +349,16 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, color: Colors.deepPurple.shade300),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade200),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade100),
-        ),
+        prefixIcon: Icon(icon, color: colorScheme.primary.withOpacity(0.7)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: colorScheme.surfaceVariant.withOpacity(0.3),
       ),
     );
   }
 
   Widget _buildExpandablePicker({
+    required BuildContext context,
     required String label,
     required IconData icon,
     required bool isExpanded,
@@ -361,6 +366,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     required Widget headerValue,
     required Widget expandedChild,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         InkWell(
@@ -370,10 +376,10 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.deepPurple.withOpacity(0.1),
+                  color: colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, size: 20, color: Colors.deepPurple),
+                child: Icon(icon, size: 20, color: colorScheme.primary),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -382,10 +388,9 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                   children: [
                     Text(
                       label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                     headerValue,
@@ -396,7 +401,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                 isExpanded
                     ? Icons.keyboard_arrow_up_rounded
                     : Icons.keyboard_arrow_down_rounded,
-                color: Colors.grey,
+                color: colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -412,40 +417,60 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     );
   }
 
-  Widget _buildTimeWheelPicker() {
+  Widget _buildTimeWheelPicker(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       height: 140,
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: colorScheme.surfaceVariant.withOpacity(0.2),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _wheelColumn(_hourController, 12, _hourNotifier, '', offset: 1),
-          const Text(
+          _wheelColumn(
+            context,
+            _hourController,
+            12,
+            _hourNotifier,
+            '',
+            offset: 1,
+          ),
+          Text(
             ':',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.deepPurple,
+              color: colorScheme.primary,
             ),
           ),
-          _wheelColumn(_minController, 60, _minNotifier, '', pad: true),
-          _wheelColumnStrings(_periodController, ["AM", "PM"], _periodNotifier),
+          _wheelColumn(
+            context,
+            _minController,
+            60,
+            _minNotifier,
+            '',
+            pad: true,
+          ),
+          _wheelColumnStrings(context, _periodController, [
+            "AM",
+            "PM",
+          ], _periodNotifier),
         ],
       ),
     );
   }
 
-  Widget _buildDurationWheelPicker() {
+  Widget _buildDurationWheelPicker(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       height: 140,
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: colorScheme.surfaceVariant.withOpacity(0.2),
         borderRadius: BorderRadius.circular(16),
       ),
       child: _wheelColumn(
+        context,
         _durationController,
         120,
         _durationNotifier,
@@ -456,6 +481,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   }
 
   Widget _wheelColumn(
+    BuildContext context,
     FixedExtentScrollController controller,
     int count,
     ValueNotifier<int> notifier,
@@ -493,10 +519,12 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   }
 
   Widget _wheelColumnStrings(
+    BuildContext context,
     FixedExtentScrollController controller,
     List<String> options,
     ValueNotifier<String> notifier,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Expanded(
       child: ListWheelScrollView.useDelegate(
         controller: controller,
@@ -511,10 +539,10 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
           builder: (_, i) => Center(
             child: Text(
               options[i],
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
+                color: colorScheme.primary,
               ),
             ),
           ),
@@ -541,8 +569,8 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
               ref
                   .read(habitsProvider.notifier)
                   .deleteHabit(widget.habitToEdit!.id);
-              Navigator.pop(ctx); // Close dialog
-              Navigator.pop(context); // Exit detail screen
+              Navigator.pop(ctx);
+              Navigator.pop(context);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),

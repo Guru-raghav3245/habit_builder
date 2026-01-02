@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_builder/screens/home_screen.dart';
 import 'package:habit_builder/services/notification_service.dart';
+import 'package:habit_builder/providers/settings_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -9,25 +10,31 @@ void main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+
     return MaterialApp(
       title: 'Strict Daily Habits',
       debugShowCheckedModeBanner: false,
+      themeMode: settings.themeMode,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: {
-            // Smoothest transition for modern Android/iOS devices
-            TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          },
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: settings.seedColor,
+          brightness: Brightness.light,
         ),
-        splashFactory: InkRipple.splashFactory, // More organic feel
+        useMaterial3: true,
+        splashFactory: InkRipple.splashFactory,
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: settings.seedColor,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
       ),
       home: const HomeScreen(),
     );
