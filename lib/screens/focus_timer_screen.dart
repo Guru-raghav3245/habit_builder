@@ -1,10 +1,10 @@
-// lib/screens/focus_timer_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:android_gesture_exclusion/android_gesture_exclusion.dart';
 import 'package:habit_builder/models/habit.dart';
+import 'package:habit_builder/services/notification_service.dart';
 
 class FocusTimerScreen extends StatefulWidget {
   final Habit habit;
@@ -21,15 +21,16 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
   late int _remainingSeconds;
   late int _totalSeconds;
 
-  // Animation for "Hold to Give Up" button
   late AnimationController _holdController;
 
   @override
   void initState() {
     super.initState();
-    // Disable ALL system gestures and back navigation
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     WakelockPlus.enable();
+
+    // Phase 4: User has entered the focus screen, cancel the "Late" reminder
+    NotificationService.cancelLateReminder(widget.habit.id);
 
     _totalSeconds = widget.habit.durationMinutes * 60;
     _calculateRemainingTime();
@@ -64,13 +65,15 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
       Duration(minutes: widget.habit.durationMinutes),
     );
 
-    setState(() {
-      if (now.isAfter(endTime)) {
-        _remainingSeconds = 0;
-      } else {
-        _remainingSeconds = endTime.difference(now).inSeconds;
-      }
-    });
+    if (mounted) {
+      setState(() {
+        if (now.isAfter(endTime)) {
+          _remainingSeconds = 0;
+        } else {
+          _remainingSeconds = endTime.difference(now).inSeconds;
+        }
+      });
+    }
 
     if (_remainingSeconds <= 0) {
       _exitWithSuccess();
@@ -116,11 +119,10 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
     final seconds = (_remainingSeconds % 60).toString().padLeft(2, '0');
 
     return AndroidGestureExclusionContainer(
-      // Block ALL system edge swipes (MIUI gestures on Redmi Note 8 Pro)
       verticalExclusionMargin: 0,
       horizontalExclusionMargin: 0,
       child: PopScope(
-        canPop: false, // Blocks back button & Flutter swipe back
+        canPop: false,
         child: Scaffold(
           backgroundColor: Colors.black,
           body: Center(
