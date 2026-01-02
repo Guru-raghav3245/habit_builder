@@ -36,7 +36,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   late FixedExtentScrollController _periodController;
   late FixedExtentScrollController _durationController;
 
-  final List<int> durationPresets = [5, 10, 15, 20, 30, 45, 60];
   final double _itemExtent = 45.0;
 
   @override
@@ -122,7 +121,15 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         );
         await notifier.updateHabit(updated);
       }
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        if (!widget.isEmbedded) Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Habit saved successfully'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -133,90 +140,96 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   @override
   Widget build(BuildContext context) {
     final content = SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionLabel('Habit Name'),
-            TextFormField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.grey.shade50,
-                border: OutlineInputBorder(borderSide: BorderSide.none),
-              ),
-              validator: (v) =>
-                  v?.trim().isEmpty ?? true ? 'Please enter a name' : null,
+            _buildCardWrapper(
+              title: 'General Information',
+              children: [
+                _buildTextField(
+                  controller: _nameController,
+                  label: 'Habit Name',
+                  hint: 'e.g., Morning Yoga',
+                  icon: Icons.edit_note_rounded,
+                  validator: (v) =>
+                      v?.trim().isEmpty ?? true ? 'Please enter a name' : null,
+                ),
+                const SizedBox(height: 20),
+                _buildTextField(
+                  controller: _goalDaysController,
+                  label: 'Challenge Duration (Days)',
+                  hint: '30',
+                  icon: Icons.flag_rounded,
+                  keyboardType: TextInputType.number,
+                ),
+              ],
             ),
             const SizedBox(height: 24),
-            _buildSectionLabel('Goal Duration (Days)'),
-            TextFormField(
-              controller: _goalDaysController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.grey.shade50,
-                hintText: 'e.g., 20, 90',
-                border: OutlineInputBorder(borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildCustomPicker(
-              label: 'Start Time',
-              icon: Icons.access_time,
-              isExpanded: _isTimeExpanded,
-              onToggle: () => setState(() {
-                _isTimeExpanded = !_isTimeExpanded;
-                if (_isTimeExpanded) _isDurationExpanded = false;
-              }),
-              headerValue: ValueListenableBuilder(
-                valueListenable: _hourNotifier,
-                builder: (_, h, __) => ValueListenableBuilder(
-                  valueListenable: _minNotifier,
-                  builder: (_, m, __) => ValueListenableBuilder(
-                    valueListenable: _periodNotifier,
-                    builder: (_, p, __) => Text(
-                      '$h:${m.toString().padLeft(2, '0')} $p',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+            _buildCardWrapper(
+              title: 'Schedule & Timing',
+              children: [
+                _buildExpandablePicker(
+                  label: 'Start Time',
+                  icon: Icons.access_time_filled_rounded,
+                  isExpanded: _isTimeExpanded,
+                  onToggle: () => setState(() {
+                    _isTimeExpanded = !_isTimeExpanded;
+                    if (_isTimeExpanded) _isDurationExpanded = false;
+                  }),
+                  headerValue: ValueListenableBuilder(
+                    valueListenable: _hourNotifier,
+                    builder: (_, h, _) => ValueListenableBuilder(
+                      valueListenable: _minNotifier,
+                      builder: (_, m, _) => ValueListenableBuilder(
+                        valueListenable: _periodNotifier,
+                        builder: (_, p, _) => Text(
+                          '$h:${m.toString().padLeft(2, '0')} $p',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
                       ),
                     ),
                   ),
+                  expandedChild: _buildTimeWheelPicker(),
                 ),
-              ),
-              expandedChild: _buildTimeWheelPicker(),
-            ),
-            const SizedBox(height: 20),
-            _buildCustomPicker(
-              label: 'Session Duration',
-              icon: Icons.timer_outlined,
-              isExpanded: _isDurationExpanded,
-              onToggle: () => setState(() {
-                _isDurationExpanded = !_isDurationExpanded;
-                if (_isDurationExpanded) _isTimeExpanded = false;
-              }),
-              headerValue: ValueListenableBuilder(
-                valueListenable: _durationNotifier,
-                builder: (_, d, __) => Text(
-                  '$d minutes',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                const Divider(height: 32),
+                _buildExpandablePicker(
+                  label: 'Focus Session',
+                  icon: Icons.timer_rounded,
+                  isExpanded: _isDurationExpanded,
+                  onToggle: () => setState(() {
+                    _isDurationExpanded = !_isDurationExpanded;
+                    if (_isDurationExpanded) _isTimeExpanded = false;
+                  }),
+                  headerValue: ValueListenableBuilder(
+                    valueListenable: _durationNotifier,
+                    builder: (_, d, _) => Text(
+                      '$d minutes',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.deepPurple,
+                      ),
+                    ),
                   ),
+                  expandedChild: _buildDurationWheelPicker(),
                 ),
-              ),
-              expandedChild: _buildDurationWheelPicker(),
+              ],
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
             ElevatedButton(
               onPressed: _saveHabit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 60),
+                minimumSize: const Size(double.infinity, 56),
+                elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -224,11 +237,33 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
               child: Text(
                 widget.habitToEdit == null ? 'Create Habit' : 'Save Changes',
                 style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
+            if (widget.habitToEdit != null && widget.isEmbedded) ...[
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: () => _confirmDelete(context),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.red,
+                ),
+                label: const Text(
+                  'Delete Habit',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+              ),
+            ],
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -237,28 +272,88 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     return widget.isEmbedded
         ? content
         : Scaffold(
+            backgroundColor: Colors.grey.shade50,
             appBar: AppBar(
               title: Text(
                 widget.habitToEdit == null ? 'New Habit' : 'Edit Habit',
               ),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              centerTitle: true,
             ),
             body: content,
           );
   }
 
-  Widget _buildSectionLabel(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 10, left: 4),
-    child: Text(
-      text,
-      style: const TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: 14,
-        color: Colors.black54,
-      ),
-    ),
-  );
+  Widget _buildCardWrapper({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 8, bottom: 8),
+          child: Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.black54,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
 
-  Widget _buildCustomPicker({
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Icon(icon, color: Colors.deepPurple.shade300),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade100),
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+      ),
+    );
+  }
+
+  Widget _buildExpandablePicker({
     required String label,
     required IconData icon,
     required bool isExpanded,
@@ -267,48 +362,74 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     required Widget expandedChild,
   }) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel(label),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isExpanded ? Colors.deepPurple : Colors.grey.shade200,
-            ),
-          ),
-          child: Column(
+        InkWell(
+          onTap: onToggle,
+          child: Row(
             children: [
-              ListTile(
-                onTap: onToggle,
-                leading: Icon(icon, color: Colors.deepPurple),
-                title: headerValue,
-                trailing: Icon(
-                  isExpanded ? Icons.expand_less : Icons.expand_more,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 20, color: Colors.deepPurple),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    headerValue,
+                  ],
                 ),
               ),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 250),
-                child: isExpanded ? expandedChild : const SizedBox.shrink(),
+              Icon(
+                isExpanded
+                    ? Icons.keyboard_arrow_up_rounded
+                    : Icons.keyboard_arrow_down_rounded,
+                color: Colors.grey,
               ),
             ],
           ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          child: isExpanded
+              ? Column(children: [const SizedBox(height: 16), expandedChild])
+              : const SizedBox.shrink(),
         ),
       ],
     );
   }
 
   Widget _buildTimeWheelPicker() {
-    return SizedBox(
+    return Container(
       height: 140,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _wheelColumn(_hourController, 12, _hourNotifier, '', offset: 1),
           const Text(
             ':',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.deepPurple,
+            ),
           ),
           _wheelColumn(_minController, 60, _minNotifier, '', pad: true),
           _wheelColumnStrings(_periodController, ["AM", "PM"], _periodNotifier),
@@ -318,8 +439,12 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   }
 
   Widget _buildDurationWheelPicker() {
-    return SizedBox(
+    return Container(
       height: 140,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: _wheelColumn(
         _durationController,
         120,
@@ -343,14 +468,23 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         controller: controller,
         itemExtent: _itemExtent,
         physics: const FixedExtentScrollPhysics(),
-        onSelectedItemChanged: (i) => notifier.value = i + offset,
+        onSelectedItemChanged: (i) {
+          HapticFeedback.selectionClick();
+          notifier.value = i + offset;
+        },
         childDelegate: ListWheelChildBuilderDelegate(
           childCount: count,
           builder: (_, i) {
             String val = (i + offset).toString();
             if (pad) val = val.padLeft(2, '0');
             return Center(
-              child: Text('$val $label', style: const TextStyle(fontSize: 18)),
+              child: Text(
+                '$val $label',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             );
           },
         ),
@@ -368,7 +502,10 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         controller: controller,
         itemExtent: _itemExtent,
         physics: const FixedExtentScrollPhysics(),
-        onSelectedItemChanged: (i) => notifier.value = options[i],
+        onSelectedItemChanged: (i) {
+          HapticFeedback.selectionClick();
+          notifier.value = options[i];
+        },
         childDelegate: ListWheelChildBuilderDelegate(
           childCount: options.length,
           builder: (_, i) => Center(
@@ -382,6 +519,34 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Habit?'),
+        content: const Text(
+          'This will permanently erase your progress for this habit.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              ref
+                  .read(habitsProvider.notifier)
+                  .deleteHabit(widget.habitToEdit!.id);
+              Navigator.pop(ctx); // Close dialog
+              Navigator.pop(context); // Exit detail screen
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
