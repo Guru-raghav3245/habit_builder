@@ -168,7 +168,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Card(
       elevation: isActive ? 8 : 1,
       margin: const EdgeInsets.only(bottom: 12),
-      color: isDoneToday ? Colors.green.shade50 : Colors.white,
+      color: Colors.white, // Static white background as requested
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: isActive
@@ -189,10 +189,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- ROW 1: Name and Delete ---
+              // --- ROW 1: Name, Status Indicator, and Delete ---
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  if (isDoneToday)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 8),
+                      child: Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                        size: 22,
+                      ),
+                    ),
                   Expanded(
                     child: Hero(
                       tag: 'habit_name_${habit.id}',
@@ -202,9 +211,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           habit.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: isDoneToday ? Colors.grey : Colors.black87,
                           ),
                         ),
                       ),
@@ -212,10 +222,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ),
                   const SizedBox(width: 8),
                   _buildInfoChip(
-                    Icons.access_time,
+                    isDoneToday ? Icons.task_alt : Icons.access_time,
                     _formatTime(habit.startTime),
                   ),
-                  const SizedBox(width: 4),
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
@@ -228,27 +237,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
               const SizedBox(height: 12),
 
-              // --- ROW 2: Progress Bar & Stats ---
+              // --- ROW 2: Compact Progress Bar ---
               _buildCompactProgress(habit),
 
               const SizedBox(height: 12),
 
-              // --- ROW 3: Journey Grid (The existing functionality intact) ---
+              // --- ROW 3: Journey Grid (Functionality Intact) ---
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: MiniStreakGrid(habit: habit),
+                child: MiniStreakGrid(habit: habit), //
               ),
 
               const SizedBox(height: 12),
 
-              // --- ROW 4: Action Buttons ---
+              // --- ROW 4: Action Buttons and Streak ---
               Row(
                 children: [
-                  // Current Streak Indicator
                   Icon(
                     Icons.whatshot,
                     size: 16,
@@ -268,7 +276,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                   ),
                   const Spacer(),
-                  // Focus Session Button (Only if Active)
                   if (isActive && !isDoneToday)
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -278,7 +285,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => FocusTimerScreen(habit: habit),
+                              builder: (_) => FocusTimerScreen(habit: habit), //
                               fullscreenDialog: true,
                             ),
                           );
@@ -295,7 +302,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         ),
                       ),
                     ),
-                  // Mark Done / Undo Button
                   SizedBox(
                     height: 36,
                     child: ElevatedButton(
@@ -303,7 +309,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         HapticFeedback.mediumImpact();
                         ref
                             .read(habitsProvider.notifier)
-                            .toggleDoneToday(habit.id);
+                            .toggleDoneToday(habit.id); //
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isDoneToday
@@ -335,9 +341,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildCompactProgress(Habit habit) {
-    final percentage = habit.completionPercentage;
+    final percentage = habit.completionPercentage; //
     final displayPercent = (percentage * 100).toInt();
-    final misses = habit.missDaysCount;
+    final misses = habit.missDaysCount; //
 
     return Column(
       children: [
