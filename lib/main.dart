@@ -21,6 +21,8 @@ class MyApp extends ConsumerWidget {
       title: 'Strict Daily Habits',
       debugShowCheckedModeBanner: false,
       themeMode: settings.themeMode,
+      themeAnimationDuration: const Duration(milliseconds: 400),
+      themeAnimationCurve: Curves.easeInOut,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: settings.seedColor,

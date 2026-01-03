@@ -18,6 +18,9 @@ class MiniStreakGrid extends StatelessWidget {
       habit.startDate.day,
     );
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     // Using Wrap instead of GridView to ensure it renders correctly regardless of count
     return Wrap(
       spacing: 4, // Horizontal space between boxes
@@ -35,11 +38,11 @@ class MiniStreakGrid extends StatelessWidget {
 
         Color boxColor;
         if (isFuture) {
-          boxColor = Colors.grey.shade200;
+          boxColor = colorScheme.onSurface.withOpacity(0.12);
         } else if (isCompleted) {
           boxColor = Colors.green;
         } else if (dayDate.isAtSameMomentAs(today)) {
-          boxColor = Colors.grey.shade300;
+          boxColor = colorScheme.onSurface.withOpacity(0.25);
         } else {
           boxColor = Colors.redAccent.withOpacity(0.6);
         }
@@ -51,7 +54,7 @@ class MiniStreakGrid extends StatelessWidget {
             color: boxColor,
             borderRadius: BorderRadius.circular(2),
             border: dayDate.isAtSameMomentAs(today)
-                ? Border.all(color: Colors.deepPurple, width: 1)
+                ? Border.all(color: colorScheme.primary, width: 1.5)
                 : null,
           ),
         );
