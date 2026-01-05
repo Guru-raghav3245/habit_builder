@@ -114,10 +114,6 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
 
   @override
   Widget build(BuildContext context) {
-    final progress = _remainingSeconds / _totalSeconds;
-    final minutes = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
-    final seconds = (_remainingSeconds % 60).toString().padLeft(2, '0');
-
     return AndroidGestureExclusionContainer(
       verticalExclusionMargin: 0,
       horizontalExclusionMargin: 0,
@@ -143,28 +139,30 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        SizedBox(
-                          width: 300,
-                          height: 300,
-                          child: CircularProgressIndicator(
-                            value: progress,
-                            strokeWidth: 2,
-                            color: Colors.deepPurpleAccent.withOpacity(0.4),
-                            backgroundColor: Colors.white10,
+                        TweenAnimationBuilder<double>(
+                          tween: Tween<double>(
+                            begin: _remainingSeconds / _totalSeconds,
+                            end: _remainingSeconds / _totalSeconds,
                           ),
+                          duration: const Duration(seconds: 1),
+                          curve: Curves.linear,
+                          builder: (context, value, child) {
+                            return SizedBox(
+                              width: 300,
+                              height: 300,
+                              child: CircularProgressIndicator(
+                                value: value,
+                                strokeWidth: 2,
+                                color: Colors.deepPurpleAccent.withOpacity(0.4),
+                                backgroundColor: Colors.white10,
+                              ),
+                            );
+                          },
                         ),
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              '$minutes:$seconds',
-                              style: const TextStyle(
-                                fontSize: 100,
-                                fontWeight: FontWeight.w100,
-                                color: Colors.white,
-                                letterSpacing: 5,
-                              ),
-                            ),
+                            TimerDisplay(seconds: _remainingSeconds),
                             const Text(
                               'FOCUS ACTIVE',
                               style: TextStyle(
@@ -180,18 +178,13 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                   ),
                 ),
 
-                // lib/screens/focus_timer_screen.dart
-
-                // ... inside the build method, replace the existing Padding/GestureDetector block:
                 Padding(
                   padding: const EdgeInsets.only(bottom: 80),
                   child: GestureDetector(
-                    // Changed to onTapDown for instant feedback
                     onTapDown: (_) {
                       _holdController.forward();
                       HapticFeedback.lightImpact();
                     },
-                    // Changed to onTapUp/onTapCancel to catch all exit conditions
                     onTapUp: (_) {
                       if (_holdController.status != AnimationStatus.completed) {
                         _holdController.reverse();
@@ -205,7 +198,6 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                     child: AnimatedBuilder(
                       animation: _holdController,
                       builder: (context, child) {
-                        // isAnimating or value > 0 ensures the text swaps instantly on touch
                         final isHolding =
                             _holdController.isAnimating ||
                             _holdController.value > 0;
@@ -250,6 +242,27 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class TimerDisplay extends StatelessWidget {
+  final int seconds;
+  const TimerDisplay({super.key, required this.seconds});
+
+  @override
+  Widget build(BuildContext context) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+
+    return Text(
+      '$m:$s',
+      style: const TextStyle(
+        fontSize: 100,
+        fontWeight: FontWeight.w100,
+        color: Colors.white,
+        letterSpacing: 5,
       ),
     );
   }

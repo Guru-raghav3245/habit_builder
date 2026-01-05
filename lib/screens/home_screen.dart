@@ -37,18 +37,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
-  String _formatTime(TimeOfDay time) {
-    final now = DateTime.now();
-    final dateTime = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      time.hour,
-      time.minute,
-    );
-    return DateFormat('h:mm a').format(dateTime);
-  }
-
   void _showThemeSettings(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -107,44 +95,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('Error: $error')),
           data: (habits) {
-            if (habits.isEmpty) return _buildEmptyState();
+            if (habits.isEmpty) return const _EmptyState();
+
             final activeHabits = habits.where((h) => !h.isArchived).toList();
             final archivedHabits = habits.where((h) => h.isArchived).toList();
 
-            return ListView(
+            return ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-              children: [
-                if (activeHabits.isNotEmpty) ...[
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                    child: Text(
-                      'ACTIVE CHALLENGES',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey,
-                        letterSpacing: 1.1,
+              itemCount:
+                  (activeHabits.isNotEmpty ? activeHabits.length + 1 : 0) +
+                  (archivedHabits.isNotEmpty ? archivedHabits.length + 1 : 0),
+              itemBuilder: (context, index) {
+                if (activeHabits.isNotEmpty) {
+                  if (index == 0) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      child: Text(
+                        'ACTIVE CHALLENGES',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                          letterSpacing: 1.1,
+                        ),
                       ),
-                    ),
-                  ),
-                  ...activeHabits.map((h) => _buildHabitCard(context, h)),
-                ],
-                if (archivedHabits.isNotEmpty) ...[
-                  const Padding(
-                    padding: EdgeInsets.only(top: 24, bottom: 8),
-                    child: Text(
-                      'COMPLETED JOURNEYS 🏆',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                        letterSpacing: 1.1,
+                    );
+                  }
+                  if (index <= activeHabits.length) {
+                    return HabitCard(habit: activeHabits[index - 1]);
+                  }
+                }
+
+                final archivedStartIndex = activeHabits.isNotEmpty
+                    ? activeHabits.length + 1
+                    : 0;
+                final relativeArchivedIndex = index - archivedStartIndex;
+
+                if (archivedHabits.isNotEmpty) {
+                  if (relativeArchivedIndex == 0) {
+                    return const Padding(
+                      padding: EdgeInsets.only(top: 24, bottom: 8),
+                      child: Text(
+                        'COMPLETED JOURNEYS 🏆',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                          letterSpacing: 1.1,
+                        ),
                       ),
-                    ),
-                  ),
-                  ...archivedHabits.map(
-                    (h) => _buildHabitCard(context, h, isArchived: true),
-                  ),
-                ],
-              ],
+                    );
+                  }
+                  return HabitCard(
+                    habit: archivedHabits[relativeArchivedIndex - 1],
+                    isArchived: true,
+                  );
+                }
+                return const SizedBox.shrink();
+              },
             );
           },
         ),
@@ -154,11 +160,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildHabitCard(
-    BuildContext context,
-    Habit habit, {
-    bool isArchived = false,
-  }) {
+  Widget _buildFab(BuildContext context) => FloatingActionButton.extended(
+    onPressed: () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
+    ),
+    backgroundColor: Theme.of(context).colorScheme.primary,
+    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+    icon: const Icon(Icons.add),
+    label: const Text('Add Habit'),
+  );
+}
+
+class HabitCard extends ConsumerWidget {
+  final Habit habit;
+  final bool isArchived;
+
+  const HabitCard({super.key, required this.habit, this.isArchived = false});
+
+  String _formatTime(TimeOfDay time) {
+    final now = DateTime.now();
+    final dateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    );
+    return DateFormat('h:mm a').format(dateTime);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDoneToday = habit.isCompletedToday;
     final isActive = habit.isActiveNow && !isArchived;
@@ -340,20 +373,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ],
         ),
       );
+}
 
-  Widget _buildFab(BuildContext context) => FloatingActionButton.extended(
-    onPressed: () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
-    ),
-    backgroundColor: Theme.of(context).colorScheme.primary,
-    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-    icon: const Icon(Icons.add),
-    label: const Text('Add Habit'),
-  );
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
 
-  Widget _buildEmptyState() =>
-      const Center(child: Text('No habits yet. Start your journey!'));
+  @override
+  Widget build(BuildContext context) {
+    return const Center(child: Text('No habits yet. Start your journey!'));
+  }
 }
 
 class ThemeSettingsSheet extends ConsumerWidget {

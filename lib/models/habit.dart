@@ -7,7 +7,8 @@ class Habit {
   int durationMinutes;
   bool reminderEnabled;
   bool focusModeEnabled;
-  List<DateTime> completedDates;
+  final List<DateTime> completedDates;
+  final Set<String> _completedDatesSet;
 
   // Phase 1: Lifecycle tracking
   final DateTime startDate;
@@ -27,6 +28,9 @@ class Habit {
     this.focusModeEnabled = true,
     List<DateTime>? completedDates,
   }) : completedDates = _filterFutureDates(completedDates ?? []),
+       _completedDatesSet = _filterFutureDates(
+         completedDates ?? [],
+       ).map((d) => "${d.year}-${d.month}-${d.day}").toSet(),
        currentStreak = _calculateCurrentStreak(
          _filterFutureDates(completedDates ?? []),
        ),
@@ -79,14 +83,15 @@ class Habit {
     return now.isAfter(todayStart) && now.isBefore(todayEnd);
   }
 
+  bool isCompletedOn(DateTime date) {
+    return _completedDatesSet.contains(
+      "${date.year}-${date.month}-${date.day}",
+    );
+  }
+
   bool get isCompletedToday {
     final today = DateTime.now();
-    return completedDates.any(
-      (date) =>
-          date.year == today.year &&
-          date.month == today.month &&
-          date.day == today.day,
-    );
+    return isCompletedOn(today);
   }
 
   static List<DateTime> _filterFutureDates(List<DateTime> dates) {
