@@ -18,8 +18,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
-  bool _isBinOpen = false; // State to control the Trash Bin mini-screen
-
   @override
   void initState() {
     super.initState();
@@ -43,7 +41,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -57,228 +54,109 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: Stack(
-        children: [
-          NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                SliverAppBar(
-                  expandedHeight: 180.0,
-                  pinned: true,
-                  stretch: true,
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  // Moved Palette Icon to Top-Left
-                  leading: IconButton(
-                    icon: const Icon(Icons.palette_outlined),
-                    onPressed: () => _showThemeSettings(context),
-                  ),
-                  // Bin Icon with Badge on Top-Right
-                  actions: [_buildBinIcon(habitsAsync)],
-                  flexibleSpace: FlexibleSpaceBar(
-                    title: const Text(
-                      'My Daily Habits',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    centerTitle: true,
-                    background: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            theme.colorScheme.primary,
-                            theme.colorScheme.primaryContainer,
-                          ],
-                        ),
-                      ),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              expandedHeight: 180.0,
+              pinned: true,
+              stretch: true,
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.palette_outlined),
+                  onPressed: () => _showThemeSettings(context),
+                ),
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                title: const Text(
+                  'My Daily Habits',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                centerTitle: true,
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.primaryContainer,
+                      ],
                     ),
                   ),
                 ),
-              ];
-            },
-            body: habitsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(child: Text('Error: $error')),
-              data: (habits) {
-                // Filter out deleted habits from main list
-                final activeHabits = habits
-                    .where((h) => !h.isArchived && !h.isDeleted)
-                    .toList();
-                final archivedHabits = habits
-                    .where((h) => h.isArchived && !h.isDeleted)
-                    .toList();
+              ),
+            ),
+          ];
+        },
+        body: habitsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => Center(child: Text('Error: $error')),
+          data: (habits) {
+            if (habits.isEmpty) return const _EmptyState();
 
-                if (activeHabits.isEmpty && archivedHabits.isEmpty)
-                  return const _EmptyState();
+            final activeHabits = habits.where((h) => !h.isArchived).toList();
+            final archivedHabits = habits.where((h) => h.isArchived).toList();
 
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                  itemCount:
-                      (activeHabits.isNotEmpty ? activeHabits.length + 1 : 0) +
-                      (archivedHabits.isNotEmpty
-                          ? archivedHabits.length + 1
-                          : 0),
-                  itemBuilder: (context, index) {
-                    if (activeHabits.isNotEmpty) {
-                      if (index == 0)
-                        return const _SectionHeader(title: 'ACTIVE CHALLENGES');
-                      if (index <= activeHabits.length) {
-                        return HabitCard(habit: activeHabits[index - 1]);
-                      }
-                    }
+            return ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+              itemCount:
+                  (activeHabits.isNotEmpty ? activeHabits.length + 1 : 0) +
+                  (archivedHabits.isNotEmpty ? archivedHabits.length + 1 : 0),
+              itemBuilder: (context, index) {
+                if (activeHabits.isNotEmpty) {
+                  if (index == 0) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      child: Text(
+                        'ACTIVE CHALLENGES',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                    );
+                  }
+                  if (index <= activeHabits.length) {
+                    return HabitCard(habit: activeHabits[index - 1]);
+                  }
+                }
 
-                    final archivedStartIndex = activeHabits.isNotEmpty
-                        ? activeHabits.length + 1
-                        : 0;
-                    final relativeArchivedIndex = index - archivedStartIndex;
+                final archivedStartIndex = activeHabits.isNotEmpty
+                    ? activeHabits.length + 1
+                    : 0;
+                final relativeArchivedIndex = index - archivedStartIndex;
 
-                    if (archivedHabits.isNotEmpty) {
-                      if (relativeArchivedIndex == 0) {
-                        return const _SectionHeader(
-                          title: 'COMPLETED JOURNEYS 🏆',
+                if (archivedHabits.isNotEmpty) {
+                  if (relativeArchivedIndex == 0) {
+                    return const Padding(
+                      padding: EdgeInsets.only(top: 24, bottom: 8),
+                      child: Text(
+                        'COMPLETED JOURNEYS 🏆',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
                           color: Colors.green,
-                          topPadding: 24,
-                        );
-                      }
-                      return HabitCard(
-                        habit: archivedHabits[relativeArchivedIndex - 1],
-                        isArchived: true,
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                );
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                    );
+                  }
+                  return HabitCard(
+                    habit: archivedHabits[relativeArchivedIndex - 1],
+                    isArchived: true,
+                  );
+                }
+                return const SizedBox.shrink();
               },
-            ),
-          ),
-          // Trash Bin Mini-Screen Overlay
-          if (_isBinOpen) _buildBinOverlay(context, habitsAsync),
-        ],
-      ),
-      // Hide FAB when Bin is open to prevent overlap
-      floatingActionButton: _isBinOpen ? null : _buildFab(context),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-    );
-  }
-
-  Widget _buildBinIcon(AsyncValue<List<Habit>> habitsAsync) {
-    // Count only soft-deleted habits
-    final deletedCount =
-        habitsAsync.value?.where((h) => h.isDeleted).length ?? 0;
-
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.delete_outline_rounded),
-          onPressed: () => setState(() => _isBinOpen = true),
+            );
+          },
         ),
-        if (deletedCount > 0)
-          Positioned(
-            right: 8,
-            top: 8,
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-              child: Text(
-                '$deletedCount',
-                style: const TextStyle(color: Colors.white, fontSize: 10),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildBinOverlay(
-    BuildContext context,
-    AsyncValue<List<Habit>> habitsAsync,
-  ) {
-    final deletedHabits =
-        habitsAsync.value?.where((h) => h.isDeleted).toList() ?? [];
-    final theme = Theme.of(context);
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 300),
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Container(
-            color: theme.scaffoldBackgroundColor,
-            child: SafeArea(
-              child: Column(
-                children: [
-                  AppBar(
-                    title: const Text('Trash Bin'),
-                    centerTitle: true,
-                    leading: IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () => setState(() => _isBinOpen = false),
-                    ),
-                  ),
-                  Expanded(
-                    child: deletedHabits.isEmpty
-                        ? const Center(child: Text("Your bin is empty"))
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: deletedHabits.length,
-                            itemBuilder: (context, i) {
-                              final h = deletedHabits[i];
-                              return ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                ),
-                                title: Text(
-                                  h.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  '${h.completedDates.length} completions preserved',
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.restore,
-                                        color: Colors.green,
-                                      ),
-                                      tooltip: 'Restore Habit',
-                                      onPressed: () => ref
-                                          .read(habitsProvider.notifier)
-                                          .restoreHabit(h.id),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.delete_forever,
-                                        color: Colors.red,
-                                      ),
-                                      tooltip: 'Delete Permanently',
-                                      onPressed: () => ref
-                                          .read(habitsProvider.notifier)
-                                          .permanentlyDeleteHabit(h.id),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+      ),
+      floatingActionButton: _buildFab(context),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -292,29 +170,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     icon: const Icon(Icons.add),
     label: const Text('Add Habit'),
   );
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final Color? color;
-  final double topPadding;
-
-  const _SectionHeader({required this.title, this.color, this.topPadding = 8});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(top: topPadding, bottom: 8, left: 4),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: color ?? Colors.grey,
-          letterSpacing: 1.1,
-        ),
-      ),
-    );
-  }
 }
 
 class HabitCard extends ConsumerWidget {
@@ -535,9 +390,11 @@ class HabitCard extends ConsumerWidget {
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState();
+
   @override
-  Widget build(BuildContext context) =>
-      const Center(child: Text('No habits yet. Start your journey!'));
+  Widget build(BuildContext context) {
+    return const Center(child: Text('No habits yet. Start your journey!'));
+  }
 }
 
 class ThemeSettingsSheet extends ConsumerWidget {

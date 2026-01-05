@@ -1,4 +1,3 @@
-// lib/models/habit.dart
 import 'package:flutter/material.dart';
 
 class Habit {
@@ -10,9 +9,13 @@ class Habit {
   bool focusModeEnabled;
   final List<DateTime> completedDates;
   final Set<String> _completedDatesSet;
+
+  // Phase 1: Lifecycle tracking
   final DateTime startDate;
   final int targetDays;
-  final DateTime? deletedAt; // For soft delete
+
+  final int currentStreak;
+  final int longestStreak;
 
   Habit({
     required this.id,
@@ -23,7 +26,6 @@ class Habit {
     required this.targetDays,
     this.reminderEnabled = true,
     this.focusModeEnabled = true,
-    this.deletedAt,
     List<DateTime>? completedDates,
   }) : completedDates = _filterFutureDates(completedDates ?? []),
        _completedDatesSet = _filterFutureDates(
@@ -36,18 +38,31 @@ class Habit {
          _filterFutureDates(completedDates ?? []),
        );
 
-  final int currentStreak;
-  final int longestStreak;
-
-  bool get isDeleted => deletedAt != null;
-
+  // Phase 2 Logic: Completion Statistics
   double get completionPercentage {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final start = DateTime(startDate.year, startDate.month, startDate.day);
+
+    // Total days elapsed since start (including today)
     final daysElapsed = today.difference(start).inDays + 1;
     if (daysElapsed <= 0) return 0.0;
-    return (completedDates.length / daysElapsed).clamp(0.0, 1.0);
+
+    final completionCount = completedDates.length;
+    final percentage = completionCount / daysElapsed;
+    return percentage > 1.0 ? 1.0 : percentage;
+  }
+
+  int get missDaysCount {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+
+    final totalDaysElapsed = today.difference(start).inDays + 1;
+    final completions = completedDates.length;
+
+    final misses = totalDaysElapsed - completions;
+    return misses < 0 ? 0 : misses;
   }
 
   int get daysElapsed {
@@ -76,9 +91,16 @@ class Habit {
     return now.isAfter(todayStart) && now.isBefore(todayEnd);
   }
 
-  bool isCompletedOn(DateTime date) =>
-      _completedDatesSet.contains("${date.year}-${date.month}-${date.day}");
-  bool get isCompletedToday => isCompletedOn(DateTime.now());
+  bool isCompletedOn(DateTime date) {
+    return _completedDatesSet.contains(
+      "${date.year}-${date.month}-${date.day}",
+    );
+  }
+
+  bool get isCompletedToday {
+    final today = DateTime.now();
+    return isCompletedOn(today);
+  }
 
   static List<DateTime> _filterFutureDates(List<DateTime> dates) {
     final now = DateTime.now();
@@ -142,7 +164,6 @@ class Habit {
         .toList(),
     'startDate': startDate.toIso8601String(),
     'targetDays': targetDays,
-    'deletedAt': deletedAt?.toIso8601String(),
   };
 
   factory Habit.fromJson(Map<String, dynamic> json) => Habit(
@@ -162,9 +183,6 @@ class Habit {
         ? DateTime.parse(json['startDate'])
         : DateTime.now(),
     targetDays: json['targetDays'] ?? 30,
-    deletedAt: json['deletedAt'] != null
-        ? DateTime.parse(json['deletedAt'])
-        : null,
   );
 
   Habit copyWith({
@@ -175,8 +193,6 @@ class Habit {
     bool? focusModeEnabled,
     List<DateTime>? completedDates,
     int? targetDays,
-    DateTime? deletedAt,
-    bool clearDeletedAt = false,
   }) => Habit(
     id: id,
     name: name ?? this.name,
@@ -187,6 +203,5 @@ class Habit {
     completedDates: completedDates ?? this.completedDates,
     startDate: this.startDate,
     targetDays: targetDays ?? this.targetDays,
-    deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
   );
 }
