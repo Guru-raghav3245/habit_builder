@@ -156,7 +156,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
       ),
       floatingActionButton: _buildFab(context),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
