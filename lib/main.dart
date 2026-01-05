@@ -32,6 +32,12 @@ class MyApp extends ConsumerWidget {
         splashFactory: InkRipple.splashFactory,
         snackBarTheme: const SnackBarThemeData(
           behavior: SnackBarBehavior.fixed,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+            ),
+          ),
         ),
       ),
       darkTheme: ThemeData(
@@ -42,6 +48,12 @@ class MyApp extends ConsumerWidget {
         useMaterial3: true,
         snackBarTheme: const SnackBarThemeData(
           behavior: SnackBarBehavior.fixed,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+            ),
+          ),
         ),
       ),
       home: const HomeScreen(),

@@ -126,14 +126,17 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Habit saved successfully'),
-            behavior: SnackBarBehavior.floating,
+            // REMOVED: behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Error saving habit')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error saving habit'),
+          // REMOVED: behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
