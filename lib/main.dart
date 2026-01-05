@@ -30,6 +30,9 @@ class MyApp extends ConsumerWidget {
         ),
         useMaterial3: true,
         splashFactory: InkRipple.splashFactory,
+        snackBarTheme: const SnackBarThemeData(
+          behavior: SnackBarBehavior.fixed,
+        ),
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -37,6 +40,9 @@ class MyApp extends ConsumerWidget {
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
+        snackBarTheme: const SnackBarThemeData(
+          behavior: SnackBarBehavior.fixed,
+        ),
       ),
       home: const HomeScreen(),
     );

@@ -65,6 +65,14 @@ class Habit {
     return misses < 0 ? 0 : misses;
   }
 
+  int get daysElapsed {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    final diff = today.difference(start).inDays + 1;
+    return diff < 0 ? 0 : diff;
+  }
+
   bool get isArchived {
     final endDate = startDate.add(Duration(days: targetDays));
     return DateTime.now().isAfter(endDate);

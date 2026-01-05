@@ -337,11 +337,24 @@ class HabitCard extends ConsumerWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            if (habit.missDaysCount > 0)
-              const Text(
-                'Missed days detected',
-                style: TextStyle(fontSize: 11, color: Colors.redAccent),
+            RichText(
+              text: TextSpan(
+                style: const TextStyle(fontSize: 11),
+                children: [
+                  TextSpan(
+                    text: '${habit.completedDates.length}',
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextSpan(
+                    text: ' / ${habit.daysElapsed}',
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ],
               ),
+            ),
           ],
         ),
       ],
