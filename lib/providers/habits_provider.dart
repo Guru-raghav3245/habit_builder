@@ -1,3 +1,4 @@
+// lib/providers/habits_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -38,7 +39,6 @@ class HabitsNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
     final list = state.value ?? [];
     final i = list.indexWhere((h) => h.id == id);
     if (i == -1) return;
-
     final habit = list[i];
     final today = DateTime(
       DateTime.now().year,
@@ -46,7 +46,6 @@ class HabitsNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
       DateTime.now().day,
     );
     List<DateTime> dates = List.from(habit.completedDates);
-
     if (habit.isCompletedToday) {
       dates.removeWhere(
         (d) =>
@@ -57,17 +56,13 @@ class HabitsNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
     } else {
       dates.add(today);
     }
-
     final updated = list
         .map((h) => h.id == id ? h.copyWith(completedDates: dates) : h)
         .toList();
     await HabitStorage.saveHabits(updated);
     _sortAndSet(updated);
-
-    // If completed today, stop any pending late reminders
-    if (!habit.isCompletedToday) {
+    if (!habit.isCompletedToday)
       await NotificationService.cancelLateReminder(id);
-    }
   }
 
   Future<void> addHabit({
@@ -75,7 +70,6 @@ class HabitsNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
     required TimeOfDay startTime,
     required int durationMinutes,
     required int targetDays,
-    bool reminderEnabled = true,
   }) async {
     final list = state.value ?? [];
     final habit = Habit(
@@ -83,15 +77,12 @@ class HabitsNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
       name: name,
       startTime: startTime,
       durationMinutes: durationMinutes,
-      reminderEnabled: reminderEnabled,
       startDate: DateTime.now(),
       targetDays: targetDays,
     );
-
     final updated = [...list, habit];
     await HabitStorage.saveHabits(updated);
     _sortAndSet(updated);
-
     await NotificationService.scheduleDailyReminder(habit);
   }
 
@@ -100,16 +91,37 @@ class HabitsNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
     final updated = list.map((item) => item.id == h.id ? h : item).toList();
     await HabitStorage.saveHabits(updated);
     _sortAndSet(updated);
-
     await NotificationService.scheduleDailyReminder(h);
   }
 
+  // Soft Delete
   Future<void> deleteHabit(String id) async {
+    final list = state.value ?? [];
+    final updated = list
+        .map((h) => h.id == id ? h.copyWith(deletedAt: DateTime.now()) : h)
+        .toList();
+    await HabitStorage.saveHabits(updated);
+    _sortAndSet(updated);
+    await NotificationService.cancelAllHabitReminders(id);
+  }
+
+  // Restore
+  Future<void> restoreHabit(String id) async {
+    final list = state.value ?? [];
+    final updated = list
+        .map((h) => h.id == id ? h.copyWith(clearDeletedAt: true) : h)
+        .toList();
+    await HabitStorage.saveHabits(updated);
+    _sortAndSet(updated);
+    final restored = updated.firstWhere((h) => h.id == id);
+    await NotificationService.scheduleDailyReminder(restored);
+  }
+
+  // Permanent Delete
+  Future<void> permanentlyDeleteHabit(String id) async {
     final list = state.value ?? [];
     final updated = list.where((h) => h.id != id).toList();
     await HabitStorage.saveHabits(updated);
     _sortAndSet(updated);
-
-    await NotificationService.cancelAllHabitReminders(id);
   }
 }
