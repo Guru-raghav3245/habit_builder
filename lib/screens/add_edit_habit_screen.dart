@@ -20,12 +20,8 @@ class AddEditHabitScreen extends ConsumerStatefulWidget {
 
 class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _timingSectionKey = GlobalKey();
-  final _scrollController = ScrollController();
   late TextEditingController _nameController;
   late TextEditingController _goalDaysController;
-
-  bool _showTimingError = false;
 
   late ValueNotifier<int> _hourNotifier;
   late ValueNotifier<int> _minNotifier;
@@ -34,6 +30,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
 
   late bool _isTimeExpanded;
   late bool _isDurationExpanded;
+  bool _isDeleting = false; // Track deletion state
 
   late FixedExtentScrollController _hourController;
   late FixedExtentScrollController _minController;
@@ -85,7 +82,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     _minController.dispose();
     _periodController.dispose();
     _durationController.dispose();
-    _scrollController.dispose();
     _hourNotifier.dispose();
     _minNotifier.dispose();
     _periodNotifier.dispose();
@@ -102,65 +98,11 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     return TimeOfDay(hour: h, minute: m);
   }
 
-  Habit? _getOverlap(TimeOfDay newStart, int duration) {
-    final habits = ref.read(habitsProvider).value ?? [];
-
-    final newStartMinutes = newStart.hour * 60 + newStart.minute;
-    final newEndMinutes = newStartMinutes + duration;
-
-    for (final habit in habits) {
-      if (habit.isArchived) continue;
-      // Skip the habit we are currently editing
-      if (widget.habitToEdit?.id == habit.id) continue;
-
-      final existingStartMinutes =
-          habit.startTime.hour * 60 + habit.startTime.minute;
-      final existingEndMinutes = existingStartMinutes + habit.durationMinutes;
-
-      // Check for overlap: (StartA < EndB) and (EndA > StartB)
-      if (newStartMinutes < existingEndMinutes &&
-          newEndMinutes > existingStartMinutes) {
-        return habit;
-      }
-
-      // Handle midnight wrap-around if necessary (though current logic is simple)
-      // If we want to be more robust, we'd check if (newEnd > 1440) or (existingEnd > 1440)
-    }
-    return null;
-  }
-
   Future<void> _saveHabit() async {
     if (!_formKey.currentState!.validate()) return;
 
     final selectedTime = _getFinalTime();
-    final duration = _durationNotifier.value;
     final goalDays = int.tryParse(_goalDaysController.text) ?? 30;
-
-    final overlappingHabit = _getOverlap(selectedTime, duration);
-    if (overlappingHabit != null) {
-      setState(() => _showTimingError = true);
-
-      // Scroll to timing section
-      Scrollable.ensureVisible(
-        _timingSectionKey.currentContext!,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Time overlap with "${overlappingHabit.name}"'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-
-      // Hide highlight after delay
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) setState(() => _showTimingError = false);
-      });
-      return;
-    }
-
     final notifier = ref.read(habitsProvider.notifier);
 
     try {
@@ -181,21 +123,19 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         await notifier.updateHabit(updated);
       }
       if (mounted) {
-        Navigator.of(context).pop();
+        if (!widget.isEmbedded) Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Habit saved successfully'),
-            // REMOVED: behavior: SnackBarBehavior.floating,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.only(bottom: 20, left: 20, right: 20),
           ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error saving habit'),
-          // REMOVED: behavior: SnackBarBehavior.floating,
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Error saving habit')));
     }
   }
 
@@ -204,7 +144,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     final content = SingleChildScrollView(
-      controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Form(
         key: _formKey,
@@ -237,10 +176,8 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             ),
             const SizedBox(height: 24),
             _buildCardWrapper(
-              key: _timingSectionKey,
               context: context,
               title: 'Schedule & Timing',
-              isError: _showTimingError,
               children: [
                 _buildExpandablePicker(
                   context: context,
@@ -318,21 +255,47 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             ),
             if (widget.habitToEdit != null && widget.isEmbedded) ...[
               const SizedBox(height: 16),
-              TextButton.icon(
-                onPressed: () => _confirmDelete(context),
-                icon: const Icon(
-                  Icons.delete_outline_rounded,
-                  color: Colors.red,
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                decoration: BoxDecoration(
+                  color: _isDeleting
+                      ? Colors.red.withOpacity(0.1)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                label: const Text(
-                  'Delete Habit',
-                  style: TextStyle(
+                child: TextButton.icon(
+                  onPressed: () {
+                    if (!_isDeleting) {
+                      setState(() => _isDeleting = true);
+                      // Reset state after 3 seconds if not confirmed
+                      Future.delayed(const Duration(seconds: 3), () {
+                        if (mounted && _isDeleting) {
+                          setState(() => _isDeleting = false);
+                        }
+                      });
+                    } else {
+                      ref
+                          .read(habitsProvider.notifier)
+                          .deleteHabit(widget.habitToEdit!.id);
+                      Navigator.pop(context);
+                    }
+                  },
+                  icon: Icon(
+                    _isDeleting
+                        ? Icons.warning_amber_rounded
+                        : Icons.delete_outline_rounded,
                     color: Colors.red,
-                    fontWeight: FontWeight.w600,
                   ),
-                ),
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
+                  label: Text(
+                    _isDeleting ? 'TAP AGAIN TO CONFIRM' : 'Delete Habit',
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
                 ),
               ),
             ],
@@ -356,15 +319,12 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   }
 
   Widget _buildCardWrapper({
-    Key? key,
     required BuildContext context,
     required String title,
     required List<Widget> children,
-    bool isError = false,
   }) {
     final theme = Theme.of(context);
     return Column(
-      key: key,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
@@ -384,10 +344,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: isError
-                  ? Colors.redAccent
-                  : theme.colorScheme.outlineVariant.withOpacity(0.5),
-              width: isError ? 2 : 1,
+              color: theme.colorScheme.outlineVariant.withOpacity(0.5),
             ),
             boxShadow: [
               BoxShadow(
@@ -618,34 +575,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  void _confirmDelete(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Habit?'),
-        content: const Text(
-          'This will permanently erase your progress for this habit.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              ref
-                  .read(habitsProvider.notifier)
-                  .deleteHabit(widget.habitToEdit!.id);
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
       ),
     );
   }
