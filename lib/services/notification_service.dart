@@ -12,10 +12,15 @@ class NotificationService {
   static const String _channelName = 'Daily Habit Reminders';
   static const String _channelDescription = 'Reminders for your habits';
 
+  // This matches your file name in the res/drawable folders (without .png)
+  static const String _notificationIcon = 'ic_stat_ic_launcher';
+
   static Future<void> init() async {
     tz.initializeTimeZones();
+
+    // Set the default initialization icon to your new logo
     const AndroidInitializationSettings android = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
+      _notificationIcon,
     );
 
     const InitializationSettings settings = InitializationSettings(
@@ -51,10 +56,8 @@ class NotificationService {
   /// 2. Exactly at start
   /// 3. 5 minutes after start (if not already in app)
   static Future<void> scheduleDailyReminder(Habit habit) async {
-    // Use hashCode of the unique ID as the base for notification IDs
     final int baseId = habit.id.hashCode;
 
-    // Always clear existing ones first
     await cancelAllHabitReminders(habit.id);
 
     if (!habit.reminderEnabled || habit.isArchived) return;
@@ -100,7 +103,6 @@ class NotificationService {
     DateTime scheduledTime,
   ) async {
     var finalTime = scheduledTime;
-    // If the calculated time has already passed today, schedule for tomorrow
     if (finalTime.isBefore(DateTime.now())) {
       finalTime = finalTime.add(const Duration(days: 1));
     }
@@ -121,6 +123,8 @@ class NotificationService {
           priority: Priority.high,
           playSound: true,
           enableVibration: true,
+          // Explicitly assign your new icon here
+          icon: _notificationIcon,
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -130,12 +134,11 @@ class NotificationService {
 
   static Future<void> cancelAllHabitReminders(String habitId) async {
     final int baseId = habitId.hashCode;
-    await _notifications.cancel(baseId); // Exact start
-    await _notifications.cancel(baseId + 1); // 5 min before
-    await _notifications.cancel(baseId + 2); // 5 min after
+    await _notifications.cancel(baseId);
+    await _notifications.cancel(baseId + 1);
+    await _notifications.cancel(baseId + 2);
   }
 
-  /// Called when user enters the focus timer to stop the "Late" reminder
   static Future<void> cancelLateReminder(String habitId) async {
     await _notifications.cancel(habitId.hashCode + 2);
   }
@@ -151,6 +154,8 @@ class NotificationService {
           _channelName,
           importance: Importance.max,
           priority: Priority.high,
+          // Use new icon for the test alarm as well
+          icon: _notificationIcon,
         ),
       ),
     );
