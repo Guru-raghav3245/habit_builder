@@ -44,7 +44,7 @@ class _DetailScreenState extends State<DetailScreen>
               flexibleSpace: FlexibleSpaceBar(
                 title: Text(
                   widget.habit.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
                 ),
                 centerTitle: true,
               ),
