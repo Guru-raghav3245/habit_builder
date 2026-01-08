@@ -61,11 +61,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               expandedHeight: 180.0,
               pinned: true,
               stretch: true,
-              backgroundColor: theme.colorScheme.primary,
+              scrolledUnderElevation: 0,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              surfaceTintColor: Colors.transparent,
               foregroundColor: theme.colorScheme.onPrimary,
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.palette_outlined),
+                  icon: const Icon(Icons.palette_outlined, color: Colors.white),
                   onPressed: () => _showThemeSettings(context),
                 ),
               ],
@@ -208,6 +210,10 @@ class HabitCard extends ConsumerWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
+        ),
+        onLongPress: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
         ),
