@@ -18,6 +18,7 @@ class _DetailScreenState extends State<DetailScreen>
   @override
   void initState() {
     super.initState();
+    // Initialize with 2 tabs for Settings and Progress
     _tabController = TabController(length: 2, vsync: this);
   }
 
@@ -48,22 +49,7 @@ class _DetailScreenState extends State<DetailScreen>
                 centerTitle: true,
               ),
             ),
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _SliverAppBarDelegate(
-                TabBar(
-                  controller: _tabController,
-                  labelColor: theme.colorScheme.primary,
-                  unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-                  indicatorColor: theme.colorScheme.primary,
-                  tabs: const [
-                    Tab(icon: Icon(Icons.settings_outlined), text: 'Settings'),
-                    Tab(icon: Icon(Icons.insights_rounded), text: 'Progress'),
-                  ],
-                ),
-                theme.colorScheme.surface,
-              ),
-            ),
+            // Removed the SliverPersistentHeader from here to move it to the bottom
           ];
         },
         body: TabBarView(
@@ -74,24 +60,36 @@ class _DetailScreenState extends State<DetailScreen>
           ],
         ),
       ),
+      // Added bottomNavigationBar to place the TabBar at the bottom of the screen
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: TabBar(
+            controller: _tabController,
+            labelColor: theme.colorScheme.primary,
+            unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+            indicatorColor: theme.colorScheme.primary,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+            tabs: const [
+              Tab(icon: Icon(Icons.settings_outlined), text: 'Settings'),
+              Tab(icon: Icon(Icons.insights_rounded), text: 'Progress'),
+            ],
+          ),
+        ),
+      ),
     );
   }
-}
-
-class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverAppBarDelegate(this._tabBar, this.bgColor);
-  final TabBar _tabBar;
-  final Color bgColor;
-  @override
-  double get minExtent => _tabBar.preferredSize.height;
-  @override
-  double get maxExtent => _tabBar.preferredSize.height;
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) => Container(color: bgColor, child: _tabBar);
-  @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
 }
