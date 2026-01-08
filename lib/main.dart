@@ -18,7 +18,7 @@ class MyApp extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
 
     return MaterialApp(
-      title: 'Strict Daily Habits',
+      title: 'HabitIt',
       debugShowCheckedModeBanner: false,
       themeMode: settings.themeMode,
       themeAnimationDuration: const Duration(milliseconds: 400),
