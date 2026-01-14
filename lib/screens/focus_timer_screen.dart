@@ -10,7 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class FocusTimerScreen extends ConsumerStatefulWidget {
   final Habit habit;
-
   const FocusTimerScreen({super.key, required this.habit});
 
   @override
@@ -22,7 +21,6 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
   late Timer _ticker;
   late int _remainingSeconds;
   late int _totalSeconds;
-
   late AnimationController _holdController;
 
   @override
@@ -30,16 +28,12 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     WakelockPlus.enable();
-
     NotificationService.cancelLateReminder(widget.habit.id);
 
     _totalSeconds = widget.habit.durationMinutes * 60;
-    _calculateRemainingTime();
+    _updateTime();
 
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      _calculateRemainingTime();
-    });
-
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
     _holdController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -48,12 +42,12 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
     _holdController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         HapticFeedback.heavyImpact();
-        _exitManual();
+        _giveUp();
       }
     });
   }
 
-  void _calculateRemainingTime() {
+  void _updateTime() {
     final now = DateTime.now();
     final startTime = DateTime(
       now.year,
@@ -68,44 +62,42 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
 
     if (mounted) {
       setState(() {
-        if (now.isAfter(endTime)) {
-          _remainingSeconds = 0;
-        } else {
-          _remainingSeconds = endTime.difference(now).inSeconds;
-        }
+        _remainingSeconds = now.isAfter(endTime)
+            ? 0
+            : endTime.difference(now).inSeconds;
       });
     }
 
     if (_remainingSeconds <= 0) {
-      _exitWithSuccess();
+      _completeSession();
     }
   }
 
-  void _exitWithSuccess() {
-    // Only mark the habit as done if the user stayed through the end.
+  void _completeSession() {
     ref.read(habitsProvider.notifier).markAsDone(widget.habit.id);
-
-    _cleanupAndExit();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Session complete! Habit marked as done. 🎉'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
+    _exit();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Well done! Habit completed. 🎉'),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 
-  void _exitManual() {
-    // Exit without marking as done.
-    _cleanupAndExit();
+  void _giveUp() {
+    ref.read(habitsProvider.notifier).markAsFailed(widget.habit.id);
+    _exit();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Session cancelled. Habit failed for today.'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
   }
 
-  void _cleanupAndExit() {
+  void _exit() {
     _ticker.cancel();
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -119,9 +111,10 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
 
   @override
   Widget build(BuildContext context) {
+    final m = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
+    final s = (_remainingSeconds % 60).toString().padLeft(2, '0');
+
     return AndroidGestureExclusionContainer(
-      verticalExclusionMargin: 0,
-      horizontalExclusionMargin: 0,
       child: PopScope(
         canPop: false,
         child: Scaffold(
@@ -134,140 +127,73 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
                   widget.habit.name.toUpperCase(),
                   style: const TextStyle(
                     color: Colors.white38,
-                    fontSize: 14,
                     letterSpacing: 6,
-                    fontWeight: FontWeight.w300,
                   ),
                 ),
-                Expanded(
-                  child: Center(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        TweenAnimationBuilder<double>(
-                          tween: Tween<double>(
-                            begin: _remainingSeconds / _totalSeconds,
-                            end: _remainingSeconds / _totalSeconds,
-                          ),
-                          duration: const Duration(seconds: 1),
-                          curve: Curves.linear,
-                          builder: (context, value, child) {
-                            return SizedBox(
-                              width: 300,
-                              height: 300,
-                              child: CircularProgressIndicator(
-                                value: value,
-                                strokeWidth: 2,
-                                color: Colors.deepPurpleAccent.withOpacity(0.4),
-                                backgroundColor: Colors.white10,
-                              ),
-                            );
-                          },
-                        ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TimerDisplay(seconds: _remainingSeconds),
-                            const Text(
-                              'FOCUS ACTIVE',
-                              style: TextStyle(
-                                color: Colors.greenAccent,
-                                letterSpacing: 4,
-                                fontSize: 12,
-                              ),
-                            ),
+                const Spacer(),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 280,
+                      height: 280,
+                      child: CircularProgressIndicator(
+                        value: _remainingSeconds / _totalSeconds,
+                        strokeWidth: 2,
+                        color: Colors.deepPurpleAccent.withOpacity(0.5),
+                      ),
+                    ),
+                    Text(
+                      '$m:$s',
+                      style: const TextStyle(
+                        fontSize: 80,
+                        fontWeight: FontWeight.w100,
+                        color: Colors.white,
+                        letterSpacing: 4,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTapDown: (_) => _holdController.forward(),
+                  onTapUp: (_) => _holdController.reverse(),
+                  onTapCancel: () => _holdController.reverse(),
+                  child: AnimatedBuilder(
+                    animation: _holdController,
+                    builder: (context, _) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 20,
+                        horizontal: 40,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(40),
+                        border: Border.all(color: Colors.red.withOpacity(0.3)),
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.red.withOpacity(0.5),
+                            Colors.transparent,
                           ],
+                          stops: [_holdController.value, _holdController.value],
                         ),
-                      ],
+                      ),
+                      child: Text(
+                        _holdController.value > 0
+                            ? 'KEEP HOLDING...'
+                            : 'HOLD TO GIVE UP',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 80),
-                  child: GestureDetector(
-                    onTapDown: (_) {
-                      _holdController.forward();
-                      HapticFeedback.lightImpact();
-                    },
-                    onTapUp: (_) {
-                      if (_holdController.status != AnimationStatus.completed) {
-                        _holdController.reverse();
-                      }
-                    },
-                    onTapCancel: () {
-                      if (_holdController.status != AnimationStatus.completed) {
-                        _holdController.reverse();
-                      }
-                    },
-                    child: AnimatedBuilder(
-                      animation: _holdController,
-                      builder: (context, child) {
-                        final isHolding =
-                            _holdController.isAnimating ||
-                            _holdController.value > 0;
-
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 18,
-                            horizontal: 45,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(40),
-                            border: Border.all(
-                              color: Colors.red.withOpacity(0.3),
-                              width: 1,
-                            ),
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.red.withOpacity(0.6),
-                                Colors.transparent,
-                              ],
-                              stops: [
-                                _holdController.value,
-                                _holdController.value,
-                              ],
-                            ),
-                          ),
-                          child: Text(
-                            isHolding ? 'HOLDING...' : 'HOLD TO GIVE UP',
-                            style: TextStyle(
-                              color: isHolding ? Colors.white : Colors.red,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
+                const SizedBox(height: 80),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class TimerDisplay extends StatelessWidget {
-  final int seconds;
-  const TimerDisplay({super.key, required this.seconds});
-
-  @override
-  Widget build(BuildContext context) {
-    final m = (seconds ~/ 60).toString().padLeft(2, '0');
-    final s = (seconds % 60).toString().padLeft(2, '0');
-
-    return Text(
-      '$m:$s',
-      style: const TextStyle(
-        fontSize: 100,
-        fontWeight: FontWeight.w100,
-        color: Colors.white,
-        letterSpacing: 5,
       ),
     );
   }

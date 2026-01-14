@@ -9,13 +9,8 @@ class Habit {
   bool focusModeEnabled;
   final List<DateTime> completedDates;
   final Set<String> _completedDatesSet;
-
-  // Phase 1: Lifecycle tracking
   final DateTime startDate;
   final int targetDays;
-
-  final int currentStreak;
-  final int longestStreak;
 
   Habit({
     required this.id,
@@ -30,52 +25,19 @@ class Habit {
   }) : completedDates = _filterFutureDates(completedDates ?? []),
        _completedDatesSet = _filterFutureDates(
          completedDates ?? [],
-       ).map((d) => "${d.year}-${d.month}-${d.day}").toSet(),
-       currentStreak = _calculateCurrentStreak(
-         _filterFutureDates(completedDates ?? []),
-       ),
-       longestStreak = _calculateLongestStreak(
-         _filterFutureDates(completedDates ?? []),
-       );
+       ).map((d) => "${d.year}-${d.month}-${d.day}").toSet();
 
-  // Phase 2 Logic: Completion Statistics
-  double get completionPercentage {
+  bool get hasWindowPassedToday {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    final endTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      startTime.hour,
+      startTime.minute,
+    ).add(Duration(minutes: durationMinutes));
 
-    // Total days elapsed since start (including today)
-    final daysElapsed = today.difference(start).inDays + 1;
-    if (daysElapsed <= 0) return 0.0;
-
-    final completionCount = completedDates.length;
-    final percentage = completionCount / daysElapsed;
-    return percentage > 1.0 ? 1.0 : percentage;
-  }
-
-  int get missDaysCount {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final start = DateTime(startDate.year, startDate.month, startDate.day);
-
-    final totalDaysElapsed = today.difference(start).inDays + 1;
-    final completions = completedDates.length;
-
-    final misses = totalDaysElapsed - completions;
-    return misses < 0 ? 0 : misses;
-  }
-
-  int get daysElapsed {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final start = DateTime(startDate.year, startDate.month, startDate.day);
-    final diff = today.difference(start).inDays + 1;
-    return diff < 0 ? 0 : diff;
-  }
-
-  bool get isArchived {
-    final endDate = startDate.add(Duration(days: targetDays));
-    return DateTime.now().isAfter(endDate);
+    return now.isAfter(endTime);
   }
 
   bool get isActiveNow {
@@ -97,9 +59,29 @@ class Habit {
     );
   }
 
-  bool get isCompletedToday {
-    final today = DateTime.now();
-    return isCompletedOn(today);
+  bool get isCompletedToday => isCompletedOn(DateTime.now());
+
+  double get completionPercentage {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    final daysElapsedTotal = today.difference(start).inDays + 1;
+    if (daysElapsedTotal <= 0) return 0.0;
+    final percentage = completedDates.length / daysElapsedTotal;
+    return percentage > 1.0 ? 1.0 : percentage;
+  }
+
+  int get daysElapsed {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    final diff = today.difference(start).inDays + 1;
+    return diff < 0 ? 0 : diff;
+  }
+
+  bool get isArchived {
+    final endDate = startDate.add(Duration(days: targetDays));
+    return DateTime.now().isAfter(endDate);
   }
 
   static List<DateTime> _filterFutureDates(List<DateTime> dates) {
@@ -112,22 +94,31 @@ class Habit {
         .toList();
   }
 
+  int get currentStreak => _calculateCurrentStreak(completedDates);
+  int get longestStreak => _calculateLongestStreak(completedDates);
+
   static int _calculateCurrentStreak(List<DateTime> dates) {
     if (dates.isEmpty) return 0;
-    final sortedDates =
+    final sorted =
         dates.map((d) => DateTime(d.year, d.month, d.day)).toSet().toList()
           ..sort((a, b) => b.compareTo(a));
     int streak = 0;
-    DateTime? expectedDate = DateTime.now();
-    for (final date in sortedDates) {
-      if (DateTime(date.year, date.month, date.day).isAtSameMomentAs(
-        DateTime(expectedDate!.year, expectedDate.month, expectedDate.day),
-      )) {
+    DateTime expected = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+
+    // If not completed today, check if it was completed yesterday to keep streak alive
+    if (!sorted.any((d) => d.isAtSameMomentAs(expected))) {
+      expected = expected.subtract(const Duration(days: 1));
+    }
+
+    for (final date in sorted) {
+      if (date.isAtSameMomentAs(expected)) {
         streak++;
-        expectedDate = expectedDate.subtract(const Duration(days: 1));
-      } else if (date.isBefore(
-        expectedDate.subtract(const Duration(days: 1)),
-      )) {
+        expected = expected.subtract(const Duration(days: 1));
+      } else if (date.isBefore(expected)) {
         break;
       }
     }
@@ -136,12 +127,12 @@ class Habit {
 
   static int _calculateLongestStreak(List<DateTime> dates) {
     if (dates.isEmpty) return 0;
-    final uniqueDates =
+    final unique =
         dates.map((d) => DateTime(d.year, d.month, d.day)).toSet().toList()
           ..sort();
     int maxS = 1, curr = 1;
-    for (int i = 1; i < uniqueDates.length; i++) {
-      if (uniqueDates[i].difference(uniqueDates[i - 1]).inDays == 1) {
+    for (int i = 1; i < unique.length; i++) {
+      if (unique[i].difference(unique[i - 1]).inDays == 1) {
         curr++;
         if (curr > maxS) maxS = curr;
       } else {
@@ -189,8 +180,6 @@ class Habit {
     String? name,
     TimeOfDay? startTime,
     int? durationMinutes,
-    bool? reminderEnabled,
-    bool? focusModeEnabled,
     List<DateTime>? completedDates,
     int? targetDays,
   }) => Habit(
@@ -198,8 +187,6 @@ class Habit {
     name: name ?? this.name,
     startTime: startTime ?? this.startTime,
     durationMinutes: durationMinutes ?? this.durationMinutes,
-    reminderEnabled: reminderEnabled ?? this.reminderEnabled,
-    focusModeEnabled: focusModeEnabled ?? this.focusModeEnabled,
     completedDates: completedDates ?? this.completedDates,
     startDate: this.startDate,
     targetDays: targetDays ?? this.targetDays,
