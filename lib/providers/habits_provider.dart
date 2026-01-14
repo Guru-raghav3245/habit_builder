@@ -34,40 +34,33 @@ class HabitsNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
     }
   }
 
-  Future<void> toggleDoneToday(String id) async {
+  /// Strictly marks a habit as completed for today.
+  /// This cannot be undone by the user manually.
+  Future<void> markAsDone(String id) async {
     final list = state.value ?? [];
     final i = list.indexWhere((h) => h.id == id);
     if (i == -1) return;
 
     final habit = list[i];
+    if (habit.isCompletedToday) return;
+
     final today = DateTime(
       DateTime.now().year,
       DateTime.now().month,
       DateTime.now().day,
     );
-    List<DateTime> dates = List.from(habit.completedDates);
 
-    if (habit.isCompletedToday) {
-      dates.removeWhere(
-        (d) =>
-            d.year == today.year &&
-            d.month == today.month &&
-            d.day == today.day,
-      );
-    } else {
-      dates.add(today);
-    }
+    List<DateTime> dates = List.from(habit.completedDates);
+    dates.add(today);
 
     final updated = list
         .map((h) => h.id == id ? h.copyWith(completedDates: dates) : h)
         .toList();
+
     await HabitStorage.saveHabits(updated);
     _sortAndSet(updated);
 
-    // If completed today, stop any pending late reminders
-    if (!habit.isCompletedToday) {
-      await NotificationService.cancelLateReminder(id);
-    }
+    await NotificationService.cancelLateReminder(id);
   }
 
   Future<void> addHabit({

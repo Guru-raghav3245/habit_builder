@@ -5,17 +5,19 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:android_gesture_exclusion/android_gesture_exclusion.dart';
 import 'package:habit_builder/models/habit.dart';
 import 'package:habit_builder/services/notification_service.dart';
+import 'package:habit_builder/providers/habits_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class FocusTimerScreen extends StatefulWidget {
+class FocusTimerScreen extends ConsumerStatefulWidget {
   final Habit habit;
 
   const FocusTimerScreen({super.key, required this.habit});
 
   @override
-  State<FocusTimerScreen> createState() => _FocusTimerScreenState();
+  ConsumerState<FocusTimerScreen> createState() => _FocusTimerScreenState();
 }
 
-class _FocusTimerScreenState extends State<FocusTimerScreen>
+class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
     with TickerProviderStateMixin {
   late Timer _ticker;
   late int _remainingSeconds;
@@ -29,7 +31,6 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     WakelockPlus.enable();
 
-    // Phase 4: User has entered the focus screen, cancel the "Late" reminder
     NotificationService.cancelLateReminder(widget.habit.id);
 
     _totalSeconds = widget.habit.durationMinutes * 60;
@@ -81,11 +82,14 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
   }
 
   void _exitWithSuccess() {
+    // Only mark the habit as done if the user stayed through the end.
+    ref.read(habitsProvider.notifier).markAsDone(widget.habit.id);
+
     _cleanupAndExit();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Session complete! You did it! 🎉'),
+          content: Text('Session complete! Habit marked as done. 🎉'),
           backgroundColor: Colors.green,
         ),
       );
@@ -93,6 +97,7 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
   }
 
   void _exitManual() {
+    // Exit without marking as done.
     _cleanupAndExit();
   }
 

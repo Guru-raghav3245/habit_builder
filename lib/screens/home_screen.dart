@@ -22,6 +22,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Initial check on load
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _checkAndRedirectToFocus(),
+    );
   }
 
   @override
@@ -34,7 +38,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.read(habitsProvider.notifier).loadHabits();
+      _checkAndRedirectToFocus();
     }
+  }
+
+  void _checkAndRedirectToFocus() {
+    final habitsAsync = ref.read(habitsProvider);
+    habitsAsync.whenData((habits) {
+      for (final habit in habits) {
+        if (habit.isActiveNow && !habit.isCompletedToday && !habit.isArchived) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => FocusTimerScreen(habit: habit),
+              fullscreenDialog: true,
+            ),
+          );
+          break;
+        }
+      }
+    });
   }
 
   void _showThemeSettings(BuildContext context) {
@@ -213,10 +236,6 @@ class HabitCard extends ConsumerWidget {
           context,
           MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
         ),
-        onLongPress: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
-        ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -279,40 +298,35 @@ class HabitCard extends ConsumerWidget {
                   ),
                   const Spacer(),
                   if (isActive && !isDoneToday)
-                    TextButton.icon(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => FocusTimerScreen(habit: habit),
-                          fullscreenDialog: true,
-                        ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
-                      icon: const Icon(Icons.bolt_rounded, size: 18),
-                      label: const Text('FOCUS'),
-                      style: TextButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: theme.colorScheme.onPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.bolt_rounded,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'ACTIVE NOW',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () => ref
-                        .read(habitsProvider.notifier)
-                        .toggleDoneToday(habit.id),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isDoneToday
-                          ? Colors.orange
-                          : theme.colorScheme.secondaryContainer,
-                      foregroundColor: isDoneToday
-                          ? Colors.white
-                          : theme.colorScheme.onSecondaryContainer,
-                      elevation: 0,
-                    ),
-                    child: Text(isDoneToday ? 'UNDO' : 'DONE'),
-                  ),
+                  // Manual DONE/UNDO button removed to prevent manual marking
                 ],
               ),
             ],
