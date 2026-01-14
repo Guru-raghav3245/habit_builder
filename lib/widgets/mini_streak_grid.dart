@@ -9,7 +9,6 @@ class MiniStreakGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final totalDays = habit.targetDays;
-
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final start = DateTime(
@@ -21,31 +20,36 @@ class MiniStreakGrid extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Using Wrap instead of GridView to ensure it renders correctly regardless of count
     return RepaintBoundary(
       child: Wrap(
-        spacing: 4, // Horizontal space between boxes
-        runSpacing: 4, // Vertical space between lines
+        spacing: 4,
+        runSpacing: 4,
         children: List.generate(totalDays, (index) {
           final dayDate = start.add(Duration(days: index));
-
           final isFuture = dayDate.isAfter(today);
           final isCompleted = habit.isCompletedOn(dayDate);
+          final isMissed = habit.isMissedOn(
+            dayDate,
+          ); // Uses new logic including failed IDs
 
           Color boxColor;
           if (isFuture) {
             boxColor = colorScheme.onSurface.withOpacity(0.12);
           } else if (isCompleted) {
             boxColor = Colors.green;
+          } else if (isMissed) {
+            boxColor = Colors.redAccent.withOpacity(
+              0.6,
+            ); // Will now trigger for "Give Ups" today
           } else if (dayDate.isAtSameMomentAs(today)) {
             boxColor = colorScheme.onSurface.withOpacity(0.25);
           } else {
-            boxColor = Colors.redAccent.withOpacity(0.6);
+            boxColor = colorScheme.onSurface.withOpacity(0.12);
           }
 
           return Container(
-            key: ValueKey(dayDate.toString()), // Benefit from stable keys
-            width: 12, // Fixed size for reliability
+            key: ValueKey(dayDate.toString()),
+            width: 12,
             height: 12,
             decoration: BoxDecoration(
               color: boxColor,

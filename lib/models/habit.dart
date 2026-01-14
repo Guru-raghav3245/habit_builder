@@ -12,6 +12,9 @@ class Habit {
   final DateTime startDate;
   final int targetDays;
 
+  // Added field to track if it's failed today (not persisted, session-based)
+  final bool isFailedToday;
+
   Habit({
     required this.id,
     required this.name,
@@ -22,11 +25,13 @@ class Habit {
     this.reminderEnabled = true,
     this.focusModeEnabled = true,
     List<DateTime>? completedDates,
+    this.isFailedToday = false, // Initialize as false
   }) : completedDates = _filterFutureDates(completedDates ?? []),
        _completedDatesSet = _filterFutureDates(
          completedDates ?? [],
        ).map((d) => "${d.year}-${d.month}-${d.day}").toSet();
 
+  // Helper to check if the scheduled time window has passed today
   bool get hasWindowPassedToday {
     final now = DateTime.now();
     final endTime = DateTime(
@@ -53,13 +58,77 @@ class Habit {
     return now.isAfter(todayStart) && now.isBefore(todayEnd);
   }
 
-  bool isCompletedOn(DateTime date) {
-    return _completedDatesSet.contains(
-      "${date.year}-${date.month}-${date.day}",
-    );
-  }
+  bool isCompletedOn(DateTime date) =>
+      _completedDatesSet.contains("${date.year}-${date.month}-${date.day}");
 
   bool get isCompletedToday => isCompletedOn(DateTime.now());
+
+  // Logic to determine if a specific date should be colored "Missed/Red"
+  bool isMissedOn(DateTime date) {
+    final d = DateTime(date.year, date.month, date.day);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    if (isCompletedOn(d)) return false;
+
+    // It is missed if it's in the past
+    if (d.isBefore(today)) return true;
+
+    // Or if it is today and it's been marked as failed/given up
+    if (d.isAtSameMomentAs(today) && isFailedToday) return true;
+
+    return false;
+  }
+
+  static List<DateTime> _filterFutureDates(List<DateTime> dates) {
+    final now = DateTime.now();
+    final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    return dates.where((date) => date.isBefore(todayEnd)).toList();
+  }
+
+  int get currentStreak => _calculateCurrentStreak(completedDates);
+  int get longestStreak => _calculateLongestStreak(completedDates);
+
+  static int _calculateCurrentStreak(List<DateTime> dates) {
+    if (dates.isEmpty) return 0;
+    final sorted =
+        dates.map((d) => DateTime(d.year, d.month, d.day)).toSet().toList()
+          ..sort((a, b) => b.compareTo(a));
+    int streak = 0;
+    DateTime expected = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+    if (!sorted.any((d) => d.isAtSameMomentAs(expected))) {
+      expected = expected.subtract(const Duration(days: 1));
+    }
+    for (final date in sorted) {
+      if (date.isAtSameMomentAs(expected)) {
+        streak++;
+        expected = expected.subtract(const Duration(days: 1));
+      } else if (date.isBefore(expected))
+        break;
+    }
+    return streak;
+  }
+
+  static int _calculateLongestStreak(List<DateTime> dates) {
+    if (dates.isEmpty) return 0;
+    final unique =
+        dates.map((d) => DateTime(d.year, d.month, d.day)).toSet().toList()
+          ..sort();
+    int maxS = 1, curr = 1;
+    for (int i = 1; i < unique.length; i++) {
+      if (unique[i].difference(unique[i - 1]).inDays == 1) {
+        curr++;
+        if (curr > maxS) maxS = curr;
+      } else {
+        curr = 1;
+      }
+    }
+    return maxS;
+  }
 
   double get completionPercentage {
     final now = DateTime.now();
@@ -82,64 +151,6 @@ class Habit {
   bool get isArchived {
     final endDate = startDate.add(Duration(days: targetDays));
     return DateTime.now().isAfter(endDate);
-  }
-
-  static List<DateTime> _filterFutureDates(List<DateTime> dates) {
-    final now = DateTime.now();
-    final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
-    return dates
-        .where(
-          (date) => date.isBefore(todayEnd) || date.isAtSameMomentAs(todayEnd),
-        )
-        .toList();
-  }
-
-  int get currentStreak => _calculateCurrentStreak(completedDates);
-  int get longestStreak => _calculateLongestStreak(completedDates);
-
-  static int _calculateCurrentStreak(List<DateTime> dates) {
-    if (dates.isEmpty) return 0;
-    final sorted =
-        dates.map((d) => DateTime(d.year, d.month, d.day)).toSet().toList()
-          ..sort((a, b) => b.compareTo(a));
-    int streak = 0;
-    DateTime expected = DateTime(
-      DateTime.now().year,
-      DateTime.now().month,
-      DateTime.now().day,
-    );
-
-    // If not completed today, check if it was completed yesterday to keep streak alive
-    if (!sorted.any((d) => d.isAtSameMomentAs(expected))) {
-      expected = expected.subtract(const Duration(days: 1));
-    }
-
-    for (final date in sorted) {
-      if (date.isAtSameMomentAs(expected)) {
-        streak++;
-        expected = expected.subtract(const Duration(days: 1));
-      } else if (date.isBefore(expected)) {
-        break;
-      }
-    }
-    return streak;
-  }
-
-  static int _calculateLongestStreak(List<DateTime> dates) {
-    if (dates.isEmpty) return 0;
-    final unique =
-        dates.map((d) => DateTime(d.year, d.month, d.day)).toSet().toList()
-          ..sort();
-    int maxS = 1, curr = 1;
-    for (int i = 1; i < unique.length; i++) {
-      if (unique[i].difference(unique[i - 1]).inDays == 1) {
-        curr++;
-        if (curr > maxS) maxS = curr;
-      } else {
-        curr = 1;
-      }
-    }
-    return maxS;
   }
 
   Map<String, dynamic> toJson() => {
@@ -182,6 +193,7 @@ class Habit {
     int? durationMinutes,
     List<DateTime>? completedDates,
     int? targetDays,
+    bool? isFailedToday,
   }) => Habit(
     id: id,
     name: name ?? this.name,
@@ -190,5 +202,6 @@ class Habit {
     completedDates: completedDates ?? this.completedDates,
     startDate: this.startDate,
     targetDays: targetDays ?? this.targetDays,
+    isFailedToday: isFailedToday ?? this.isFailedToday,
   );
 }

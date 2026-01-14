@@ -15,19 +15,18 @@ class StreakCalendar extends StatelessWidget {
 
     final today = _normalize(DateTime.now());
     final start = _normalize(habit.startDate);
-    final end =
-        _normalize(start.add(Duration(days: habit.targetDays - 1)));
+    final end = _normalize(start.add(Duration(days: habit.targetDays - 1)));
 
     DayVisual? visualFor(DateTime date) {
       final d = _normalize(date);
 
+      // Return null if the date is outside the challenge range
       if (d.isBefore(start) || d.isAfter(end)) return null;
 
-      final completed = habit.isCompletedOn(d);
-
       return DayVisual(
-        completed: completed,
-        missed: d.isBefore(today) && !completed,
+        completed: habit.isCompletedOn(d),
+        // Uses the Habit model's logic to check if the day was missed or failed
+        missed: habit.isMissedOn(d),
         isToday: d == today,
       );
     }
@@ -74,11 +73,7 @@ class StreakCalendar extends StatelessWidget {
           children: [
             _legendItem('Completed', Colors.green),
             _legendItem('Missed', Colors.redAccent),
-            _legendItem(
-              'Today',
-              Colors.transparent,
-              outline: Colors.blue,
-            ),
+            _legendItem('Today', Colors.transparent, outline: Colors.blue),
           ],
         ),
       ],
@@ -113,10 +108,7 @@ class StreakCalendar extends StatelessWidget {
       ),
       child: Text(
         day,
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          color: cs.onSurface,
-        ),
+        style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface),
       ),
     );
   }
@@ -139,10 +131,7 @@ class StreakCalendar extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
         ),
       ],
     );
