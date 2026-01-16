@@ -11,9 +11,10 @@ class Habit {
   final Set<String> _completedDatesSet;
   final DateTime startDate;
   final int targetDays;
-
-  // Added field to track if it's failed today (not persisted, session-based)
   final bool isFailedToday;
+
+  // Memoization map to avoid heavy calculations during UI builds
+  final Map<String, bool> _missedCache = {};
 
   Habit({
     required this.id,
@@ -25,13 +26,12 @@ class Habit {
     this.reminderEnabled = true,
     this.focusModeEnabled = true,
     List<DateTime>? completedDates,
-    this.isFailedToday = false, // Initialize as false
+    this.isFailedToday = false,
   }) : completedDates = _filterFutureDates(completedDates ?? []),
        _completedDatesSet = _filterFutureDates(
          completedDates ?? [],
        ).map((d) => "${d.year}-${d.month}-${d.day}").toSet();
 
-  // Helper to check if the scheduled time window has passed today
   bool get hasWindowPassedToday {
     final now = DateTime.now();
     final endTime = DateTime(
@@ -41,7 +41,6 @@ class Habit {
       startTime.hour,
       startTime.minute,
     ).add(Duration(minutes: durationMinutes));
-
     return now.isAfter(endTime);
   }
 
@@ -63,21 +62,25 @@ class Habit {
 
   bool get isCompletedToday => isCompletedOn(DateTime.now());
 
-  // Logic to determine if a specific date should be colored "Missed/Red"
   bool isMissedOn(DateTime date) {
+    final key = "${date.year}-${date.month}-${date.day}";
+    if (_missedCache.containsKey(key)) return _missedCache[key]!;
+
     final d = DateTime(date.year, date.month, date.day);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    if (isCompletedOn(d)) return false;
+    bool result = false;
+    if (isCompletedOn(d)) {
+      result = false;
+    } else if (d.isBefore(today)) {
+      result = true;
+    } else if (d.isAtSameMomentAs(today) && isFailedToday) {
+      result = true;
+    }
 
-    // It is missed if it's in the past
-    if (d.isBefore(today)) return true;
-
-    // Or if it is today and it's been marked as failed/given up
-    if (d.isAtSameMomentAs(today) && isFailedToday) return true;
-
-    return false;
+    _missedCache[key] = result;
+    return result;
   }
 
   static List<DateTime> _filterFutureDates(List<DateTime> dates) {
@@ -138,14 +141,6 @@ class Habit {
     if (daysElapsedTotal <= 0) return 0.0;
     final percentage = completedDates.length / daysElapsedTotal;
     return percentage > 1.0 ? 1.0 : percentage;
-  }
-
-  int get daysElapsed {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final start = DateTime(startDate.year, startDate.month, startDate.day);
-    final diff = today.difference(start).inDays + 1;
-    return diff < 0 ? 0 : diff;
   }
 
   bool get isArchived {

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:habit_builder/providers/habits_provider.dart';
-import 'package:habit_builder/providers/settings_provider.dart';
 import 'package:habit_builder/screens/add_edit_habit_screen.dart';
 import 'package:habit_builder/screens/detail_screen.dart';
 import 'package:habit_builder/screens/focus_timer_screen.dart';
@@ -26,12 +25,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
-    // Run automated logic immediately on launch
     WidgetsBinding.instance.addPostFrameCallback((_) => _runAutomatedLogic());
 
-    // Check every 5 seconds for status changes and auto-redirects
-    _autoCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    // Performance Optimization: Increased from 5s to 30s to reduce main thread load
+    _autoCheckTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _runAutomatedLogic();
     });
   }
@@ -54,14 +51,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void _runAutomatedLogic() {
     if (_isTransitioning || !mounted) return;
 
-    // 1. Refresh "Missed/Failed" logic in provider
     ref.read(habitsProvider.notifier).refreshHabitStatuses();
 
-    // 2. Automated Redirection to Focus Mode
     final habitsState = ref.read(habitsProvider);
     habitsState.habits.whenData((habits) {
       for (final habit in habits) {
-        // Prevent re-opening if already failed or completed today
         bool isFailed = habitsState.failedHabitIds.contains(habit.id);
 
         if (habit.isActiveNow &&
@@ -84,17 +78,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
   }
 
-  void _showThemeSettings(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => const ThemeSettingsSheet(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final habitsState = ref.watch(habitsProvider);
@@ -110,14 +93,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               stretch: true,
               scrolledUnderElevation: 0,
               backgroundColor: theme.colorScheme.primaryContainer,
-              surfaceTintColor: Colors.transparent,
-              foregroundColor: theme.colorScheme.onPrimary,
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.palette_outlined, color: Colors.white),
-                  onPressed: () => _showThemeSettings(context),
-                ),
-              ],
               flexibleSpace: FlexibleSpaceBar(
                 title: const Text(
                   'My Daily Habits',
@@ -144,7 +119,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('Error: $error')),
           data: (habits) {
-            if (habits.isEmpty) return const _EmptyState();
+            if (habits.isEmpty) {
+              return const Center(child: Text('No habits yet.'));
+            }
 
             final activeHabits = habits.where((h) => !h.isArchived).toList();
             final archivedHabits = habits.where((h) => h.isArchived).toList();
@@ -161,7 +138,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   }
                   if (index <= activeHabits.length) {
                     final habit = activeHabits[index - 1];
-                    // Inject the failure state so widgets can render red boxes
                     final isFailed = habitsState.failedHabitIds.contains(
                       habit.id,
                     );
@@ -192,21 +168,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           },
         ),
       ),
-      floatingActionButton: _buildFab(context),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
+        ),
+        icon: const Icon(Icons.add),
+        label: const Text('Add Habit'),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
-
-  Widget _buildFab(BuildContext context) => FloatingActionButton.extended(
-    onPressed: () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
-    ),
-    backgroundColor: Theme.of(context).colorScheme.primary,
-    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-    icon: const Icon(Icons.add),
-    label: const Text('Add Habit'),
-  );
 }
 
 class _SectionHeader extends StatelessWidget {
@@ -228,17 +200,16 @@ class _SectionHeader extends StatelessWidget {
   );
 }
 
-class HabitCard extends ConsumerWidget {
+class HabitCard extends StatelessWidget {
   final Habit habit;
   final bool isArchived;
-
   const HabitCard({super.key, required this.habit, this.isArchived = false});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDoneToday = habit.isCompletedToday;
-    final isFailed = habit.isFailedToday; // Now coming from injected copyWith
+    final isFailed = habit.isFailedToday;
     final isActive =
         habit.isActiveNow && !isArchived && !isFailed && !isDoneToday;
 
@@ -285,18 +256,7 @@ class HabitCard extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  _buildInfoChip(
-                    context,
-                    DateFormat('h:mm a').format(
-                      DateTime(
-                        2022,
-                        1,
-                        1,
-                        habit.startTime.hour,
-                        habit.startTime.minute,
-                      ),
-                    ),
-                  ),
+                  _buildTimeChip(context, habit),
                 ],
               ),
               const SizedBox(height: 12),
@@ -359,65 +319,20 @@ class HabitCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoChip(BuildContext context, String label) => Container(
+  Widget _buildTimeChip(BuildContext context, Habit habit) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
       color: Theme.of(context).colorScheme.surfaceVariant,
       borderRadius: BorderRadius.circular(8),
     ),
     child: Text(
-      label,
+      DateFormat('h:mm a').format(
+        DateTime(2022, 1, 1, habit.startTime.hour, habit.startTime.minute),
+      ),
       style: TextStyle(
         fontSize: 12,
         color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
     ),
   );
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-  @override
-  Widget build(BuildContext context) =>
-      const Center(child: Text('No habits yet.'));
-}
-
-class ThemeSettingsSheet extends ConsumerWidget {
-  const ThemeSettingsSheet({super.key});
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text("Appearance", style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 20),
-          SegmentedButton<ThemeMode>(
-            segments: const [
-              ButtonSegment(
-                value: ThemeMode.light,
-                icon: Icon(Icons.light_mode),
-                label: Text("Light"),
-              ),
-              ButtonSegment(
-                value: ThemeMode.dark,
-                icon: Icon(Icons.dark_mode),
-                label: Text("Dark"),
-              ),
-              ButtonSegment(
-                value: ThemeMode.system,
-                icon: Icon(Icons.settings),
-                label: Text("System"),
-              ),
-            ],
-            selected: {settings.themeMode},
-            onSelectionChanged: (newSet) =>
-                ref.read(settingsProvider.notifier).setThemeMode(newSet.first),
-          ),
-        ],
-      ),
-    );
-  }
 }

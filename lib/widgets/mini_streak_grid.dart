@@ -3,7 +3,6 @@ import 'package:habit_builder/models/habit.dart';
 
 class MiniStreakGrid extends StatelessWidget {
   final Habit habit;
-
   const MiniStreakGrid({super.key, required this.habit});
 
   @override
@@ -16,50 +15,53 @@ class MiniStreakGrid extends StatelessWidget {
       habit.startDate.month,
       habit.startDate.day,
     );
+    final colorScheme = Theme.of(context).colorScheme;
 
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    // Constants for layout
+    const double boxSize = 12.0;
+    const double spacing = 4.0;
+    const int itemsPerRow = 7;
+
+    // Calculate the width required for exactly 7 boxes (7 boxes + 6 spacings)
+    const double gridWidth =
+        (boxSize * itemsPerRow) + (spacing * (itemsPerRow - 1));
 
     return RepaintBoundary(
-      child: Wrap(
-        spacing: 4,
-        runSpacing: 4,
-        children: List.generate(totalDays, (index) {
-          final dayDate = start.add(Duration(days: index));
-          final isFuture = dayDate.isAfter(today);
-          final isCompleted = habit.isCompletedOn(dayDate);
-          final isMissed = habit.isMissedOn(
-            dayDate,
-          ); // Uses new logic including failed IDs
+      child: SizedBox(
+        width: gridWidth,
+        child: Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: List.generate(totalDays, (index) {
+            final dayDate = start.add(Duration(days: index));
+            final isToday = dayDate.isAtSameMomentAs(today);
 
-          Color boxColor;
-          if (isFuture) {
-            boxColor = colorScheme.onSurface.withOpacity(0.12);
-          } else if (isCompleted) {
-            boxColor = Colors.green;
-          } else if (isMissed) {
-            boxColor = Colors.redAccent.withOpacity(
-              0.6,
-            ); // Will now trigger for "Give Ups" today
-          } else if (dayDate.isAtSameMomentAs(today)) {
-            boxColor = colorScheme.onSurface.withOpacity(0.25);
-          } else {
-            boxColor = colorScheme.onSurface.withOpacity(0.12);
-          }
+            Color boxColor;
+            if (dayDate.isAfter(today)) {
+              boxColor = colorScheme.onSurface.withOpacity(0.12);
+            } else if (habit.isCompletedOn(dayDate)) {
+              boxColor = Colors.green;
+            } else if (habit.isMissedOn(dayDate)) {
+              boxColor = Colors.redAccent.withOpacity(0.6);
+            } else if (isToday) {
+              boxColor = colorScheme.onSurface.withOpacity(0.25);
+            } else {
+              boxColor = colorScheme.onSurface.withOpacity(0.12);
+            }
 
-          return Container(
-            key: ValueKey(dayDate.toString()),
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: boxColor,
-              borderRadius: BorderRadius.circular(2),
-              border: dayDate.isAtSameMomentAs(today)
-                  ? Border.all(color: colorScheme.primary, width: 1.5)
-                  : null,
-            ),
-          );
-        }),
+            return Container(
+              width: boxSize,
+              height: boxSize,
+              decoration: BoxDecoration(
+                color: boxColor,
+                borderRadius: BorderRadius.circular(2),
+                border: dayDate.isAtSameMomentAs(today)
+                    ? Border.all(color: colorScheme.primary, width: 1.5)
+                    : null,
+              ),
+            );
+          }),
+        ),
       ),
     );
   }
