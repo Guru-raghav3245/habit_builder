@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:habit_builder/providers/habits_provider.dart';
+import 'package:habit_builder/providers/settings_provider.dart'; // Added import
 import 'package:habit_builder/screens/add_edit_habit_screen.dart';
 import 'package:habit_builder/screens/detail_screen.dart';
 import 'package:habit_builder/screens/focus_timer_screen.dart';
@@ -78,6 +79,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
   }
 
+  // New method to show the theme settings modal
+  void _showThemeSettings(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _ThemeSettingsModal(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final habitsState = ref.watch(habitsProvider);
@@ -93,6 +104,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               stretch: true,
               scrolledUnderElevation: 0,
               backgroundColor: theme.colorScheme.primaryContainer,
+              actions: [
+                // New Theme Button
+                IconButton(
+                  icon: const Icon(Icons.palette_rounded),
+                  tooltip: 'Customize Theme',
+                  onPressed: () => _showThemeSettings(context),
+                ),
+              ],
               flexibleSpace: FlexibleSpaceBar(
                 title: const Text(
                   'My Daily Habits',
@@ -335,4 +354,142 @@ class HabitCard extends StatelessWidget {
       ),
     ),
   );
+}
+
+// New Modal Widget for Theme Settings
+class _ThemeSettingsModal extends ConsumerWidget {
+  const _ThemeSettingsModal();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final theme = Theme.of(context);
+
+    // List of available colors
+    final List<Color> colors = [
+      Colors.deepPurple,
+      Colors.indigo,
+      Colors.blue,
+      Colors.cyan,
+      Colors.teal,
+      Colors.green,
+      Colors.lime,
+      Colors.orange,
+      Colors.deepOrange,
+      Colors.red,
+      Colors.pink,
+      Colors.blueGrey,
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Customize Look',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Appearance',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Toggle Buttons for Light/Dark/System
+          SegmentedButton<ThemeMode>(
+            segments: const [
+              ButtonSegment(
+                value: ThemeMode.system,
+                label: Text('System'),
+                icon: Icon(Icons.brightness_auto),
+              ),
+              ButtonSegment(
+                value: ThemeMode.light,
+                label: Text('Light'),
+                icon: Icon(Icons.light_mode),
+              ),
+              ButtonSegment(
+                value: ThemeMode.dark,
+                label: Text('Dark'),
+                icon: Icon(Icons.dark_mode),
+              ),
+            ],
+            selected: {settings.themeMode},
+            onSelectionChanged: (Set<ThemeMode> newSelection) {
+              ref
+                  .read(settingsProvider.notifier)
+                  .setThemeMode(newSelection.first);
+            },
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Accent Color',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Color Selection Wrap
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: colors.map((color) {
+              final isSelected = settings.seedColor.value == color.value;
+              return GestureDetector(
+                onTap: () {
+                  ref.read(settingsProvider.notifier).setSeedColor(color);
+                },
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: isSelected
+                        ? Border.all(
+                            color: theme.colorScheme.onSurface,
+                            width: 3,
+                          )
+                        : null,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: isSelected
+                      ? const Icon(Icons.check, color: Colors.white, size: 20)
+                      : null,
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
 }
