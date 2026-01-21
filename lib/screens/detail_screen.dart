@@ -37,19 +37,21 @@ class _DetailScreenState extends State<DetailScreen>
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             SliverAppBar(
-              expandedHeight: 150.0,
+              expandedHeight:
+                  kToolbarHeight, // Reduced to standard height to fix alignment
               pinned: true,
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: theme.colorScheme.onPrimary,
-              flexibleSpace: FlexibleSpaceBar(
-                title: Text(
-                  widget.habit.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-                ),
-                centerTitle: true,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              title: Text(
+                widget.habit.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
+              centerTitle: true,
             ),
-            // Removed the SliverPersistentHeader from here to move it to the bottom
           ];
         },
         body: TabBarView(
