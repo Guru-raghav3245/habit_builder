@@ -1,4 +1,4 @@
-# habit_builder
+# habitit
 
 A new Flutter project.
 

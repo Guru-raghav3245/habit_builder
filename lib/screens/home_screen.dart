@@ -2,12 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:habit_builder/providers/habits_provider.dart';
-import 'package:habit_builder/providers/settings_provider.dart';
-import 'package:habit_builder/screens/add_edit_habit_screen.dart';
-import 'package:habit_builder/screens/detail_screen.dart';
-import 'package:habit_builder/screens/focus_timer_screen.dart';
-import 'package:habit_builder/models/habit.dart';
+import 'package:habitit/providers/habits_provider.dart';
+import 'package:habitit/providers/settings_provider.dart';
+import 'package:habitit/screens/add_edit_habit_screen.dart';
+import 'package:habitit/screens/detail_screen.dart';
+import 'package:habitit/screens/focus_timer_screen.dart';
+import 'package:habitit/models/habit.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});

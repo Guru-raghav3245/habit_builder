@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:habit_builder/models/habit.dart';
-import 'package:habit_builder/providers/habits_provider.dart';
+import 'package:habitit/models/habit.dart';
+import 'package:habitit/providers/habits_provider.dart';
 
 class AddEditHabitScreen extends ConsumerStatefulWidget {
   final Habit? habitToEdit;

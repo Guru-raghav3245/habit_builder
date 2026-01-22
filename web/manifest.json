@@ -1,6 +1,6 @@
 {
-    "name": "habit_builder",
-    "short_name": "habit_builder",
+    "name": "habitit",
+    "short_name": "habitit",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

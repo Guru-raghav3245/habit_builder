@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:habit_builder/models/habit.dart';
-import 'package:habit_builder/widgets/streak_calendar.dart';
+import 'package:habitit/models/habit.dart';
+import 'package:habitit/widgets/streak_calendar.dart';
 
 class ProgressScreen extends StatelessWidget {
   final Habit habit;

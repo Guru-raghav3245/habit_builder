@@ -1,7 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:habit_builder/models/habit.dart';
+import 'package:habitit/models/habit.dart';
 import 'dart:io';
 
 class NotificationService {

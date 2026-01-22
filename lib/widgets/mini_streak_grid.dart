@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:habit_builder/models/habit.dart';
+import 'package:habitit/models/habit.dart';
 
 class MiniStreakGrid extends StatelessWidget {
   final Habit habit;

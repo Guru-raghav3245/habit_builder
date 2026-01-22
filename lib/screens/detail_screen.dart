@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:habit_builder/models/habit.dart';
-import 'package:habit_builder/screens/add_edit_habit_screen.dart';
-import 'package:habit_builder/screens/progress_screen.dart';
+import 'package:habitit/models/habit.dart';
+import 'package:habitit/screens/add_edit_habit_screen.dart';
+import 'package:habitit/screens/progress_screen.dart';
 
 class DetailScreen extends StatefulWidget {
   final Habit habit;

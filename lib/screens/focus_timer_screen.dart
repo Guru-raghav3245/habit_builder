@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:android_gesture_exclusion/android_gesture_exclusion.dart';
-import 'package:habit_builder/models/habit.dart';
-import 'package:habit_builder/services/notification_service.dart';
-import 'package:habit_builder/providers/habits_provider.dart';
+import 'package:habitit/models/habit.dart';
+import 'package:habitit/services/notification_service.dart';
+import 'package:habitit/providers/habits_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class FocusTimerScreen extends ConsumerStatefulWidget {

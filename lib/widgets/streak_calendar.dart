@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:habit_builder/models/habit.dart';
+import 'package:habitit/models/habit.dart';
 
 class StreakCalendar extends StatelessWidget {
   final Habit habit;

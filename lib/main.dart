@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:habit_builder/screens/home_screen.dart';
-import 'package:habit_builder/services/notification_service.dart';
-import 'package:habit_builder/providers/settings_provider.dart';
+import 'package:habitit/screens/home_screen.dart';
+import 'package:habitit/services/notification_service.dart';
+import 'package:habitit/providers/settings_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
