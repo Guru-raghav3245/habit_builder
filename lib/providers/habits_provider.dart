@@ -119,6 +119,8 @@ class HabitsNotifier extends StateNotifier<HabitsState> {
     final updated = [...list, habit];
     await HabitStorage.saveHabits(updated);
     _sortAndSet(updated);
+
+    // Use the real method name:
     await NotificationService.scheduleDailyReminder(habit);
   }
 
@@ -127,6 +129,8 @@ class HabitsNotifier extends StateNotifier<HabitsState> {
     final updated = list.map((item) => item.id == h.id ? h : item).toList();
     await HabitStorage.saveHabits(updated);
     _sortAndSet(updated);
+
+    // Use the real method name:
     await NotificationService.scheduleDailyReminder(h);
   }
 

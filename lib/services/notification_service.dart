@@ -1,8 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+
 import 'package:habitit/models/habit.dart';
-import 'dart:io';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
@@ -16,27 +18,36 @@ class NotificationService {
   static const String _notificationIcon = 'ic_stat_ic_launcher';
 
   static Future<void> init() async {
+    print('🔔 [NotificationService] init() called');
+
     tz.initializeTimeZones();
 
-    // Set the default initialization icon to your new logo
-    const AndroidInitializationSettings android = AndroidInitializationSettings(
-      _notificationIcon,
-    );
+    const AndroidInitializationSettings android =
+        AndroidInitializationSettings(_notificationIcon);
 
     const InitializationSettings settings = InitializationSettings(
       android: android,
     );
 
     await _notifications.initialize(settings);
+    print('🔔 [NotificationService] notifications.initialize done');
 
     if (Platform.isAndroid) {
-      final androidImplementation = _notifications
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >();
+      final androidImplementation =
+          _notifications.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
 
-      await androidImplementation?.requestNotificationsPermission();
-      await androidImplementation?.requestExactAlarmsPermission();
+      final notifPermissionGranted =
+          await androidImplementation?.requestNotificationsPermission();
+      print(
+          '🔔 [NotificationService] requestNotificationsPermission -> $notifPermissionGranted');
+
+      final exactGranted =
+          await androidImplementation?.requestExactAlarmsPermission();
+      final canExact =
+          await androidImplementation?.canScheduleExactNotifications() ?? false;
+      print(
+          '🔔 [NotificationService] requestExactAlarmsPermission -> $exactGranted, canScheduleExactNotifications -> $canExact');
 
       const channel = AndroidNotificationChannel(
         _channelId,
@@ -48,6 +59,7 @@ class NotificationService {
       );
 
       await androidImplementation?.createNotificationChannel(channel);
+      print('🔔 [NotificationService] NotificationChannel created');
     }
   }
 
@@ -58,9 +70,17 @@ class NotificationService {
   static Future<void> scheduleDailyReminder(Habit habit) async {
     final int baseId = habit.id.hashCode;
 
+    print(
+        '🔔 [NotificationService] scheduleDailyReminder for "${habit.name}" '
+        '(id=${habit.id}, baseId=$baseId, reminderEnabled=${habit.reminderEnabled}, archived=${habit.isArchived})');
+
     await cancelAllHabitReminders(habit.id);
 
-    if (!habit.reminderEnabled || habit.isArchived) return;
+    if (!habit.reminderEnabled || habit.isArchived) {
+      print(
+          '🔔 [NotificationService] Skipping schedule for "${habit.name}" because reminderEnabled=${habit.reminderEnabled}, isArchived=${habit.isArchived}');
+      return;
+    }
 
     final now = DateTime.now();
     final startTime = DateTime(
@@ -70,6 +90,9 @@ class NotificationService {
       habit.startTime.hour,
       habit.startTime.minute,
     );
+
+    print(
+        '🔔 [NotificationService] Today\'s startTime for "${habit.name}" -> $startTime (now=$now)');
 
     // Notification 1: 5 Minutes Before
     await _zonedSchedule(
@@ -102,12 +125,32 @@ class NotificationService {
     String body,
     DateTime scheduledTime,
   ) async {
+    final now = DateTime.now();
     var finalTime = scheduledTime;
-    if (finalTime.isBefore(DateTime.now())) {
+
+    // Always shift to future if the time has already passed (like your demo)
+    if (finalTime.isBefore(now)) {
       finalTime = finalTime.add(const Duration(days: 1));
+      print(
+        '🔔 [NotificationService] _zonedSchedule(id=$id) '
+        'scheduledTime=$scheduledTime is in the past (now=$now) – shifting to next day -> $finalTime',
+      );
+    } else {
+      print(
+        '🔔 [NotificationService] _zonedSchedule(id=$id) '
+        'scheduledTime=$scheduledTime (now=$now)',
+      );
     }
 
+    // Match the working demo: exactAllowWhileIdle
+    const AndroidScheduleMode androidScheduleMode =
+        AndroidScheduleMode.exactAllowWhileIdle;
+    print(
+        '🔔 [NotificationService] _zonedSchedule(id=$id) using mode=$androidScheduleMode');
+
     final tzScheduledDate = tz.TZDateTime.from(finalTime, tz.local);
+    print(
+        '🔔 [NotificationService] Calling plugin.zonedSchedule(id=$id, time=$tzScheduledDate)');
 
     await _notifications.zonedSchedule(
       id,
@@ -123,27 +166,37 @@ class NotificationService {
           priority: Priority.high,
           playSound: true,
           enableVibration: true,
-          // Explicitly assign your new icon here
           icon: _notificationIcon,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: androidScheduleMode,
+      // Daily at this time for habits, same as your demo app
       matchDateTimeComponents: DateTimeComponents.time,
     );
+
+    print(
+        '🔔 [NotificationService] _zonedSchedule(id=$id) scheduled at $tzScheduledDate');
   }
 
   static Future<void> cancelAllHabitReminders(String habitId) async {
     final int baseId = habitId.hashCode;
+    print(
+        '🔔 [NotificationService] cancelAllHabitReminders for habitId=$habitId (baseId=$baseId)');
     await _notifications.cancel(baseId);
     await _notifications.cancel(baseId + 1);
     await _notifications.cancel(baseId + 2);
   }
 
   static Future<void> cancelLateReminder(String habitId) async {
-    await _notifications.cancel(habitId.hashCode + 2);
+    final int baseId = habitId.hashCode;
+    final int lateId = baseId + 2;
+    print(
+        '🔔 [NotificationService] cancelLateReminder for habitId=$habitId (id=$lateId)');
+    await _notifications.cancel(lateId);
   }
 
   static Future<void> testAlarm() async {
+    print('🔔 [NotificationService] testAlarm() called');
     await _notifications.show(
       999,
       'Test Alarm',
@@ -154,10 +207,46 @@ class NotificationService {
           _channelName,
           importance: Importance.max,
           priority: Priority.high,
-          // Use new icon for the test alarm as well
           icon: _notificationIcon,
         ),
       ),
     );
+    print('🔔 [NotificationService] testAlarm() notification.show() done');
+  }
+
+  /// Direct 1-minute scheduled test (exact, one-shot)
+  static Future<void> testScheduleInOneMinute() async {
+    final now = DateTime.now();
+    final inOneMinute = now.add(const Duration(minutes: 1));
+    print(
+        '🔔 [NotificationService] testScheduleInOneMinute at (local) $inOneMinute');
+
+    final tzDate = tz.TZDateTime.from(inOneMinute, tz.local);
+    print('🔔 [NotificationService] testScheduleInOneMinute tzDate=$tzDate');
+
+    await _notifications.zonedSchedule(
+      987654,
+      'Plain Schedule Test',
+      'Testing scheduled notification in 1 minute (exact, one-shot)',
+      tzDate,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
+          icon: _notificationIcon,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      // null => fire once at this exact time, not daily
+      matchDateTimeComponents: null,
+    );
+
+    print(
+        '🔔 [NotificationService] testScheduleInOneMinute scheduled at $tzDate');
   }
 }

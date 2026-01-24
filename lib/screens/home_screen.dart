@@ -2,11 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import 'package:habitit/providers/habits_provider.dart';
 import 'package:habitit/providers/settings_provider.dart';
 import 'package:habitit/screens/add_edit_habit_screen.dart';
 import 'package:habitit/screens/detail_screen.dart';
 import 'package:habitit/screens/focus_timer_screen.dart';
+import 'package:habitit/services/notification_service.dart';
 import 'package:habitit/models/habit.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -24,17 +26,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void initState() {
     super.initState();
+    print('🏠 [HomeScreen] initState');
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _runAutomatedLogic());
 
-    // Performance Optimization: Increased from 5s to 30s to reduce main thread load
-    _autoCheckTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      print('🏠 [HomeScreen] Post-frame callback -> _initNotificationsAndLogic');
+      await _initNotifications();
+      _runAutomatedLogic();
+    });
+
+    _autoCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _runAutomatedLogic();
     });
   }
 
+  Future<void> _initNotifications() async {
+    print('🏠 [HomeScreen] _initNotifications() start');
+    await NotificationService.init();
+
+    final habitsState = ref.read(habitsProvider);
+    final habits = habitsState.habits.asData?.value ?? [];
+    print('🏠 [HomeScreen] Rescheduling notifications for ${habits.length} habits');
+    for (final habit in habits) {
+      print(
+          '🏠 [HomeScreen] Reschedule habit "${habit.name}" '
+          '(id=${habit.id}, reminderEnabled=${habit.reminderEnabled}, archived=${habit.isArchived})');
+      if (habit.reminderEnabled && !habit.isArchived) {
+        await NotificationService.scheduleDailyReminder(habit);
+      }
+    }
+    print('🏠 [HomeScreen] _initNotifications() done');
+  }
+
   @override
   void dispose() {
+    print('🏠 [HomeScreen] dispose');
     _autoCheckTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -42,21 +68,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    print('🏠 [HomeScreen] didChangeAppLifecycleState: $state');
     if (state == AppLifecycleState.resumed) {
+      print('🏠 [HomeScreen] App resumed -> reload habits and logic');
       ref.read(habitsProvider.notifier).loadHabits();
       _runAutomatedLogic();
     }
   }
 
   void _runAutomatedLogic() {
-    if (_isTransitioning || !mounted) return;
+    if (!mounted) {
+      print('🏠 [HomeScreen] _runAutomatedLogic() called but not mounted');
+      return;
+    }
 
+    if (_isTransitioning) {
+      return;
+    }
+
+    print('🏠 [HomeScreen] _runAutomatedLogic() running');
     ref.read(habitsProvider.notifier).refreshHabitStatuses();
 
     final habitsState = ref.read(habitsProvider);
     habitsState.habits.whenData((habits) {
+      print('🏠 [HomeScreen] _runAutomatedLogic() habits length = ${habits.length}');
       for (final habit in habits) {
-        bool isFailed = habitsState.failedHabitIds.contains(habit.id);
+        final isFailed = habitsState.failedHabitIds.contains(habit.id);
+
+        print(
+            '🏠 [HomeScreen] Checking habit "${habit.name}": '
+            'isActiveNow=${habit.isActiveNow}, '
+            'isCompletedToday=${habit.isCompletedToday}, '
+            'isArchived=${habit.isArchived}, '
+            'isFailed=$isFailed, '
+            'reminderEnabled=${habit.reminderEnabled}');
 
         if (habit.isActiveNow &&
             !habit.isCompletedToday &&
@@ -109,6 +154,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   onPressed: () => _showThemeSettings(context),
                 ),
                 const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () async {
+                    print('🏠 [HomeScreen] Test Notification button tapped');
+                    await NotificationService.testAlarm();
+                  },
+                  child: const Text('Test Notification'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () async {
+                    print(
+                        '🏠 [HomeScreen] Test Zoned in 1 min button tapped');
+                    await NotificationService.testScheduleInOneMinute();
+                  },
+                  child: const Text('Test Zoned in 1 min'),
+                ),
+                const SizedBox(width: 8),
               ],
               flexibleSpace: FlexibleSpaceBar(
                 titlePadding: const EdgeInsets.only(bottom: 16),
@@ -144,6 +206,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             final activeHabits = habits.where((h) => !h.isArchived).toList();
             final archivedHabits = habits.where((h) => h.isArchived).toList();
 
+            print(
+                '🏠 [HomeScreen] build() activeHabits=${activeHabits.length}, archivedHabits=${archivedHabits.length}');
+
             return ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               itemCount:
@@ -156,18 +221,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   }
                   if (index <= activeHabits.length) {
                     final habit = activeHabits[index - 1];
-                    final isFailed = habitsState.failedHabitIds.contains(
-                      habit.id,
-                    );
+                    final isFailed =
+                        habitsState.failedHabitIds.contains(habit.id);
                     return HabitCard(
                       habit: habit.copyWith(isFailedToday: isFailed),
                     );
                   }
                 }
 
-                final archivedStartIndex = activeHabits.isNotEmpty
-                    ? activeHabits.length + 1
-                    : 0;
+                final archivedStartIndex =
+                    activeHabits.isNotEmpty ? activeHabits.length + 1 : 0;
                 final relativeArchivedIndex = index - archivedStartIndex;
 
                 if (archivedHabits.isNotEmpty) {
@@ -187,10 +250,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
-        ),
+        onPressed: () {
+          print('🏠 [HomeScreen] Add Habit FAB tapped');
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
+          );
+        },
         icon: const Icon(Icons.add),
         label: const Text('Add Habit'),
       ),
@@ -206,17 +272,17 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-    child: Text(
-      text,
-      style: TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: 12,
-        color: color ?? Colors.grey,
-        letterSpacing: 1.1,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            color: color ?? Colors.grey,
+            letterSpacing: 1.1,
+          ),
+        ),
+      );
 }
 
 class HabitCard extends StatelessWidget {
@@ -232,7 +298,6 @@ class HabitCard extends StatelessWidget {
     final isActive =
         habit.isActiveNow && !isArchived && !isFailed && !isDoneToday;
 
-    // Determine status text/color
     String statusText = '';
     Color statusColor = Colors.grey;
 
@@ -261,10 +326,13 @@ class HabitCard extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
-        ),
+        onTap: () {
+          print('🏠 [HomeScreen] HabitCard tapped -> "${habit.name}"');
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
+          );
+        },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -369,8 +437,6 @@ class HabitCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Weekly Grid Visualizer
               _buildHistoryGrid(context, habit),
             ],
           ),
@@ -393,22 +459,18 @@ class HabitCard extends StatelessWidget {
     List<Widget> rows = [];
     int currentDayIndex = 0;
 
-    // Build rows until we cover all target days
     while (currentDayIndex < totalDays) {
       List<Widget> weekWidgets = [];
 
-      // Build 7 days (or fewer for the last week)
       for (int i = 0; i < 7; i++) {
         if (currentDayIndex >= totalDays) {
-          // Fill remaining space in the last row to maintain alignment
           weekWidgets.add(const Expanded(child: SizedBox()));
         } else {
           final date = startDate.add(Duration(days: currentDayIndex));
           final isToday = date.isAtSameMomentAs(today);
 
-          Color color = theme.colorScheme.surfaceVariant.withOpacity(
-            0.3,
-          ); // Future/Default
+          Color color =
+              theme.colorScheme.surfaceVariant.withOpacity(0.3);
 
           if (habit.isCompletedOn(date)) {
             color = Colors.green;
@@ -417,20 +479,22 @@ class HabitCard extends StatelessWidget {
               color = Colors.redAccent.withOpacity(0.5);
             }
           } else if (isToday) {
-            // Today highlights
             color = theme.colorScheme.primary.withOpacity(0.15);
           }
 
           weekWidgets.add(
             Expanded(
               child: Container(
-                height: 10, // Slim rectangle height
+                height: 10,
                 margin: const EdgeInsets.symmetric(horizontal: 2),
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.circular(3),
                   border: isToday && !habit.isCompletedOn(date)
-                      ? Border.all(color: theme.colorScheme.primary, width: 1)
+                      ? Border.all(
+                          color: theme.colorScheme.primary,
+                          width: 1,
+                        )
                       : null,
                 ),
               ),
@@ -460,7 +524,6 @@ class _ThemeSettingsModal extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final theme = Theme.of(context);
 
-    // Warm to Cold + Neutrals
     final List<Color> colors = [
       Colors.red,
       Colors.deepOrange,
@@ -564,7 +627,6 @@ class _ThemeSettingsModal extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          // Horizontal scrolling list
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -573,7 +635,7 @@ class _ThemeSettingsModal extends ConsumerWidget {
                 final isSelected = settings.seedColor.value == color.value;
                 final isBright =
                     ThemeData.estimateBrightnessForColor(color) ==
-                    Brightness.light;
+                        Brightness.light;
 
                 return Padding(
                   padding: const EdgeInsets.only(right: 12),
