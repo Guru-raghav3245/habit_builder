@@ -154,23 +154,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   onPressed: () => _showThemeSettings(context),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () async {
-                    print('🏠 [HomeScreen] Test Notification button tapped');
-                    await NotificationService.testAlarm();
-                  },
-                  child: const Text('Test Notification'),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () async {
-                    print(
-                        '🏠 [HomeScreen] Test Zoned in 1 min button tapped');
-                    await NotificationService.testScheduleInOneMinute();
-                  },
-                  child: const Text('Test Zoned in 1 min'),
-                ),
-                const SizedBox(width: 8),
               ],
               flexibleSpace: FlexibleSpaceBar(
                 titlePadding: const EdgeInsets.only(bottom: 16),
