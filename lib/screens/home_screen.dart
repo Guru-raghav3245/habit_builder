@@ -368,6 +368,13 @@ class HabitCard extends StatelessWidget {
             MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
           );
         },
+        onLongPress: () {
+          print('🏠 [HomeScreen] HabitCard long-pressed -> "${habit.name}"');
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
+          );
+        },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

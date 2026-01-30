@@ -103,6 +103,48 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
 
     final selectedTime = _getFinalTime();
     final goalDays = int.tryParse(_goalDaysController.text) ?? 30;
+
+    // --- VALIDATION START: Check for overlapping habits ---
+    final habitsState = ref.read(habitsProvider);
+    final existingHabits = habitsState.habits.asData?.value ?? [];
+
+    // Helper to convert TimeOfDay to minutes from midnight
+    int getStartMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
+
+    final newStartMins = getStartMinutes(selectedTime);
+    final newDuration = _durationNotifier.value;
+    final newEndMins = newStartMins + newDuration;
+
+    for (final habit in existingHabits) {
+      // 1. Skip the habit currently being edited (so it doesn't conflict with itself)
+      if (widget.habitToEdit != null && habit.id == widget.habitToEdit!.id) {
+        continue;
+      }
+
+      // 2. Skip archived habits (optional, assuming archived habits don't block slots)
+      if (habit.isArchived) continue;
+
+      final hStartMins = getStartMinutes(habit.startTime);
+      final hEndMins = hStartMins + habit.durationMinutes;
+
+      // 3. Check for overlap logic: (StartA < EndB) and (EndA > StartB)
+      if (newStartMins < hEndMins && newEndMins > hStartMins) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Time conflict! Overlaps with "${habit.name}" (${habit.startTime.format(context)})',
+              ),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.fixed,
+            ),
+          );
+        }
+        return; // Stop the save process
+      }
+    }
+    // --- VALIDATION END ---
+
     final notifier = ref.read(habitsProvider.notifier);
 
     try {
@@ -122,19 +164,28 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         );
         await notifier.updateHabit(updated);
       }
+
       if (mounted) {
+        // Only pop if we are in the standalone screen, not the embedded tab
         if (!widget.isEmbedded) Navigator.of(context).pop();
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Habit saved successfully'),
             behavior: SnackBarBehavior.fixed,
+            backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Error saving habit')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error saving habit'),
+            behavior: SnackBarBehavior.fixed,
+          ),
+        );
+      }
     }
   }
 

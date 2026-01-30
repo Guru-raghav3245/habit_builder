@@ -98,7 +98,7 @@ class NotificationService {
     await _zonedSchedule(
       baseId + 1,
       'Almost time!',
-      '${habit.name} starts in 5 minutes. Get ready!',
+      '${habit.name} starts in 5 minutes.',
       startTime.subtract(const Duration(minutes: 5)),
     );
 
