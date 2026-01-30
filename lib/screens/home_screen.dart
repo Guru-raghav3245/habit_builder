@@ -20,7 +20,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
-  Timer? _autoCheckTimer;
+  Timer? _nextCheckTimer;
   bool _isTransitioning = false;
 
   @override
@@ -30,12 +30,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      print('🏠 [HomeScreen] Post-frame callback -> _initNotificationsAndLogic');
+      print(
+        '🏠 [HomeScreen] Post-frame callback -> _initNotificationsAndLogic',
+      );
       await _initNotifications();
-      _runAutomatedLogic();
-    });
-
-    _autoCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _runAutomatedLogic();
     });
   }
@@ -46,11 +44,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     final habitsState = ref.read(habitsProvider);
     final habits = habitsState.habits.asData?.value ?? [];
-    print('🏠 [HomeScreen] Rescheduling notifications for ${habits.length} habits');
+    print(
+      '🏠 [HomeScreen] Rescheduling notifications for ${habits.length} habits',
+    );
     for (final habit in habits) {
-      print(
-          '🏠 [HomeScreen] Reschedule habit "${habit.name}" '
-          '(id=${habit.id}, reminderEnabled=${habit.reminderEnabled}, archived=${habit.isArchived})');
       if (habit.reminderEnabled && !habit.isArchived) {
         await NotificationService.scheduleDailyReminder(habit);
       }
@@ -61,7 +58,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void dispose() {
     print('🏠 [HomeScreen] dispose');
-    _autoCheckTimer?.cancel();
+    _nextCheckTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -73,6 +70,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       print('🏠 [HomeScreen] App resumed -> reload habits and logic');
       ref.read(habitsProvider.notifier).loadHabits();
       _runAutomatedLogic();
+    } else if (state == AppLifecycleState.paused) {
+      _nextCheckTimer?.cancel();
+    }
+  }
+
+  void _scheduleNextCheck() {
+    _nextCheckTimer?.cancel();
+
+    final habitsState = ref.read(habitsProvider);
+    final habits = habitsState.habits.asData?.value ?? [];
+    if (habits.isEmpty) return;
+
+    final now = DateTime.now();
+    DateTime? nextEventTime;
+
+    for (final habit in habits) {
+      if (habit.isArchived || habit.isCompletedToday) continue;
+
+      // Calculate start and end times for today
+      final todayStart = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        habit.startTime.hour,
+        habit.startTime.minute,
+      );
+      final todayEnd = todayStart.add(Duration(minutes: habit.durationMinutes));
+
+      // If start time is in the future, it's a candidate
+      if (todayStart.isAfter(now)) {
+        if (nextEventTime == null || todayStart.isBefore(nextEventTime)) {
+          nextEventTime = todayStart;
+        }
+      }
+
+      // If currently active (start < now < end), end time is a candidate
+      if (now.isAfter(todayStart) && now.isBefore(todayEnd)) {
+        if (nextEventTime == null || todayEnd.isBefore(nextEventTime)) {
+          nextEventTime = todayEnd;
+        }
+      }
+    }
+
+    if (nextEventTime != null) {
+      final difference = nextEventTime.difference(now);
+      // Add a small buffer (e.g., 1 second) to ensure we are strictly after the time
+      final duration = difference + const Duration(seconds: 1);
+      
+      print('🏠 [HomeScreen] Scheduling next check in ${duration.inSeconds}s at $nextEventTime');
+      _nextCheckTimer = Timer(duration, _runAutomatedLogic);
+    } else {
+      print('🏠 [HomeScreen] No upcoming habit events today.');
+      // Optional: Schedule a check for tomorrow 00:00:01 if app stays open
     }
   }
 
@@ -91,23 +141,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     final habitsState = ref.read(habitsProvider);
     habitsState.habits.whenData((habits) {
-      print('🏠 [HomeScreen] _runAutomatedLogic() habits length = ${habits.length}');
+      bool pushedScreen = false;
       for (final habit in habits) {
         final isFailed = habitsState.failedHabitIds.contains(habit.id);
-
-        print(
-            '🏠 [HomeScreen] Checking habit "${habit.name}": '
-            'isActiveNow=${habit.isActiveNow}, '
-            'isCompletedToday=${habit.isCompletedToday}, '
-            'isArchived=${habit.isArchived}, '
-            'isFailed=$isFailed, '
-            'reminderEnabled=${habit.reminderEnabled}');
 
         if (habit.isActiveNow &&
             !habit.isCompletedToday &&
             !habit.isArchived &&
             !isFailed) {
           _isTransitioning = true;
+          pushedScreen = true;
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -116,9 +159,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
           ).then((_) {
             _isTransitioning = false;
+            // Re-run logic when returning from the timer screen
+            _runAutomatedLogic();
           });
           break;
         }
+      }
+      
+      // If we didn't push a screen, schedule the next check
+      if (!pushedScreen) {
+        _scheduleNextCheck();
       }
     });
   }
@@ -134,6 +184,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Listen to provider to trigger rebuilds and reschedule checks on data change
+    ref.listen(habitsProvider, (_, __) => _scheduleNextCheck());
+    
     final habitsState = ref.watch(habitsProvider);
     final theme = Theme.of(context);
 
@@ -189,9 +242,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             final activeHabits = habits.where((h) => !h.isArchived).toList();
             final archivedHabits = habits.where((h) => h.isArchived).toList();
 
-            print(
-                '🏠 [HomeScreen] build() activeHabits=${activeHabits.length}, archivedHabits=${archivedHabits.length}');
-
             return ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               itemCount:
@@ -204,16 +254,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   }
                   if (index <= activeHabits.length) {
                     final habit = activeHabits[index - 1];
-                    final isFailed =
-                        habitsState.failedHabitIds.contains(habit.id);
+                    final isFailed = habitsState.failedHabitIds.contains(
+                      habit.id,
+                    );
                     return HabitCard(
                       habit: habit.copyWith(isFailedToday: isFailed),
                     );
                   }
                 }
 
-                final archivedStartIndex =
-                    activeHabits.isNotEmpty ? activeHabits.length + 1 : 0;
+                final archivedStartIndex = activeHabits.isNotEmpty
+                    ? activeHabits.length + 1
+                    : 0;
                 final relativeArchivedIndex = index - archivedStartIndex;
 
                 if (archivedHabits.isNotEmpty) {
@@ -255,17 +307,17 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-            color: color ?? Colors.grey,
-            letterSpacing: 1.1,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+    child: Text(
+      text,
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 12,
+        color: color ?? Colors.grey,
+        letterSpacing: 1.1,
+      ),
+    ),
+  );
 }
 
 class HabitCard extends StatelessWidget {
@@ -452,8 +504,7 @@ class HabitCard extends StatelessWidget {
           final date = startDate.add(Duration(days: currentDayIndex));
           final isToday = date.isAtSameMomentAs(today);
 
-          Color color =
-              theme.colorScheme.surfaceVariant.withOpacity(0.3);
+          Color color = theme.colorScheme.surfaceVariant.withOpacity(0.3);
 
           if (habit.isCompletedOn(date)) {
             color = Colors.green;
@@ -474,10 +525,7 @@ class HabitCard extends StatelessWidget {
                   color: color,
                   borderRadius: BorderRadius.circular(3),
                   border: isToday && !habit.isCompletedOn(date)
-                      ? Border.all(
-                          color: theme.colorScheme.primary,
-                          width: 1,
-                        )
+                      ? Border.all(color: theme.colorScheme.primary, width: 1)
                       : null,
                 ),
               ),
@@ -618,7 +666,7 @@ class _ThemeSettingsModal extends ConsumerWidget {
                 final isSelected = settings.seedColor.value == color.value;
                 final isBright =
                     ThemeData.estimateBrightnessForColor(color) ==
-                        Brightness.light;
+                    Brightness.light;
 
                 return Padding(
                   padding: const EdgeInsets.only(right: 12),

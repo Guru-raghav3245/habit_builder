@@ -34,8 +34,9 @@ class HabitsNotifier extends StateNotifier<HabitsState> {
 
   void _sortAndSet(List<Habit> habits) {
     habits.sort((a, b) {
-      if (a.startTime.hour != b.startTime.hour)
+      if (a.startTime.hour != b.startTime.hour) {
         return a.startTime.hour.compareTo(b.startTime.hour);
+      }
       return a.startTime.minute.compareTo(b.startTime.minute);
     });
     state = state.copyWith(habits: AsyncValue.data(habits));
@@ -57,7 +58,6 @@ class HabitsNotifier extends StateNotifier<HabitsState> {
       bool changed = false;
 
       for (final habit in habits) {
-        // Automatically mark as failed if the time window passed and it wasn't done
         if (habit.hasWindowPassedToday && !habit.isCompletedToday) {
           if (!currentFailed.contains(habit.id)) {
             currentFailed.add(habit.id);
@@ -120,7 +120,6 @@ class HabitsNotifier extends StateNotifier<HabitsState> {
     await HabitStorage.saveHabits(updated);
     _sortAndSet(updated);
 
-    // Use the real method name:
     await NotificationService.scheduleDailyReminder(habit);
   }
 
@@ -130,7 +129,6 @@ class HabitsNotifier extends StateNotifier<HabitsState> {
     await HabitStorage.saveHabits(updated);
     _sortAndSet(updated);
 
-    // Use the real method name:
     await NotificationService.scheduleDailyReminder(h);
   }
 

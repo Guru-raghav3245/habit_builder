@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:habitit/models/settings.dart';
 
-final settingsProvider = StateNotifierProvider<SettingsNotifier, AppSettings>((
-  ref,
-) {
-  return SettingsNotifier();
-});
+final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(
+  () => SettingsNotifier(),
+);
 
-class SettingsNotifier extends StateNotifier<AppSettings> {
-  SettingsNotifier()
-    : super(
-        AppSettings(themeMode: ThemeMode.system, seedColor: Colors.deepPurple),
-      ) {
-    _loadSettings();
-  }
-
+class SettingsNotifier extends Notifier<AppSettings> {
   static const _themeKey = 'theme_mode';
   static const _colorKey = 'seed_color';
+
+  @override
+  AppSettings build() {
+    _loadSettings();
+    return AppSettings(
+      themeMode: ThemeMode.system,
+      seedColor: Colors.deepPurple,
+    );
+  }
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();

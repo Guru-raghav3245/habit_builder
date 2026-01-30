@@ -13,9 +13,6 @@ class Habit {
   final int targetDays;
   final bool isFailedToday;
 
-  // Memoization map to avoid heavy calculations during UI builds
-  final Map<String, bool> _missedCache = {};
-
   Habit({
     required this.id,
     required this.name,
@@ -63,24 +60,18 @@ class Habit {
   bool get isCompletedToday => isCompletedOn(DateTime.now());
 
   bool isMissedOn(DateTime date) {
-    final key = "${date.year}-${date.month}-${date.day}";
-    if (_missedCache.containsKey(key)) return _missedCache[key]!;
-
     final d = DateTime(date.year, date.month, date.day);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    bool result = false;
     if (isCompletedOn(d)) {
-      result = false;
+      return false;
     } else if (d.isBefore(today)) {
-      result = true;
+      return true;
     } else if (d.isAtSameMomentAs(today) && isFailedToday) {
-      result = true;
+      return true;
     }
-
-    _missedCache[key] = result;
-    return result;
+    return false;
   }
 
   static List<DateTime> _filterFutureDates(List<DateTime> dates) {
