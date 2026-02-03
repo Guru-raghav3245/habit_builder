@@ -45,6 +45,10 @@ dependencies:
   timezone: ^0.10.1
   intl: ^0.20.2
   google_fonts: ^8.0.0
+  firebase_core: ^4.4.0
+  firebase_auth: ^6.1.4
+  google_sign_in: ^7.2.0
+  cloud_firestore: ^6.1.2
 
 dev_dependencies:
   flutter_test:

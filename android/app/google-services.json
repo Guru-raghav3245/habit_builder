@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "929412639791",
+    "project_id": "habitit-cfedb",
+    "storage_bucket": "habitit-cfedb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:929412639791:android:14aea1a0d1a7b7ef7a6ada",
+        "android_client_info": {
+          "package_name": "com.example.habitit"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "929412639791-aiuidsi5fokp95i5dq2fnpqbfos9418l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDl60EbPqhY1gL3nwxNc7BpUslQSr9xBvw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "929412639791-aiuidsi5fokp95i5dq2fnpqbfos9418l.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
