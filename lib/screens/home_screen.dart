@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import this
+import 'package:google_sign_in/google_sign_in.dart'; // Import this
 
 import 'package:habitit/providers/habits_provider.dart';
 import 'package:habitit/providers/settings_provider.dart';
@@ -122,7 +124,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       _nextCheckTimer = Timer(duration, _runAutomatedLogic);
     } else {
       print('🏠 [HomeScreen] No upcoming habit events today.');
-      // Optional: Schedule a check for tomorrow 00:00:01 if app stays open
     }
   }
 
@@ -206,6 +207,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   tooltip: 'Customize Theme',
                   onPressed: () => _showThemeSettings(context),
                 ),
+                // --- LOGOUT BUTTON START ---
+                IconButton(
+                  icon: const Icon(Icons.logout_rounded),
+                  tooltip: 'Logout',
+                  onPressed: () async {
+                    // Sign out from Firebase
+                    await FirebaseAuth.instance.signOut();
+                    
+                    // Sign out from Google (Fix: use .instance)
+                    try {
+                      await GoogleSignIn.instance.signOut();
+                    } catch (e) {
+                      print('Error signing out of Google: $e');
+                    }
+                  },
+                ),
+                // --- LOGOUT BUTTON END ---
                 const SizedBox(width: 8),
               ],
               flexibleSpace: FlexibleSpaceBar(
