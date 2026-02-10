@@ -90,7 +90,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     for (final habit in habits) {
       if (habit.isArchived || habit.isCompletedToday) continue;
 
-      // Calculate start and end times for today
       final todayStart = DateTime(
         now.year,
         now.month,
@@ -100,14 +99,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       );
       final todayEnd = todayStart.add(Duration(minutes: habit.durationMinutes));
 
-      // If start time is in the future, it's a candidate
       if (todayStart.isAfter(now)) {
         if (nextEventTime == null || todayStart.isBefore(nextEventTime)) {
           nextEventTime = todayStart;
         }
       }
 
-      // If currently active (start < now < end), end time is a candidate
       if (now.isAfter(todayStart) && now.isBefore(todayEnd)) {
         if (nextEventTime == null || todayEnd.isBefore(nextEventTime)) {
           nextEventTime = todayEnd;
@@ -117,7 +114,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     if (nextEventTime != null) {
       final difference = nextEventTime.difference(now);
-      // Add a small buffer (e.g., 1 second) to ensure we are strictly after the time
       final duration = difference + const Duration(seconds: 1);
       
       print('🏠 [HomeScreen] Scheduling next check in ${duration.inSeconds}s at $nextEventTime');
@@ -160,14 +156,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
           ).then((_) {
             _isTransitioning = false;
-            // Re-run logic when returning from the timer screen
             _runAutomatedLogic();
           });
           break;
         }
       }
       
-      // If we didn't push a screen, schedule the next check
       if (!pushedScreen) {
         _scheduleNextCheck();
       }
@@ -185,7 +179,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Listen to provider to trigger rebuilds and reschedule checks on data change
     ref.listen(habitsProvider, (_, __) => _scheduleNextCheck());
     
     final habitsState = ref.watch(habitsProvider);
@@ -207,15 +200,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   tooltip: 'Customize Theme',
                   onPressed: () => _showThemeSettings(context),
                 ),
-                // --- LOGOUT BUTTON START ---
                 IconButton(
                   icon: const Icon(Icons.logout_rounded),
                   tooltip: 'Logout',
                   onPressed: () async {
-                    // Sign out from Firebase
                     await FirebaseAuth.instance.signOut();
                     
-                    // Sign out from Google (Fix: use .instance)
                     try {
                       await GoogleSignIn.instance.signOut();
                     } catch (e) {
@@ -223,7 +213,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     }
                   },
                 ),
-                // --- LOGOUT BUTTON END ---
                 const SizedBox(width: 8),
               ],
               flexibleSpace: FlexibleSpaceBar(
@@ -464,7 +453,6 @@ class HabitCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Streak Badge
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,

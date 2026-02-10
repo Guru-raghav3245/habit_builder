@@ -30,7 +30,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
 
   late bool _isTimeExpanded;
   late bool _isDurationExpanded;
-  bool _isDeleting = false; // Track deletion state
+  bool _isDeleting = false; 
 
   late FixedExtentScrollController _hourController;
   late FixedExtentScrollController _minController;
@@ -104,11 +104,9 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     final selectedTime = _getFinalTime();
     final goalDays = int.tryParse(_goalDaysController.text) ?? 30;
 
-    // --- VALIDATION START: Check for overlapping habits ---
     final habitsState = ref.read(habitsProvider);
     final existingHabits = habitsState.habits.asData?.value ?? [];
 
-    // Helper to convert TimeOfDay to minutes from midnight
     int getStartMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
 
     final newStartMins = getStartMinutes(selectedTime);
@@ -116,18 +114,15 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     final newEndMins = newStartMins + newDuration;
 
     for (final habit in existingHabits) {
-      // 1. Skip the habit currently being edited (so it doesn't conflict with itself)
       if (widget.habitToEdit != null && habit.id == widget.habitToEdit!.id) {
         continue;
       }
 
-      // 2. Skip archived habits (optional, assuming archived habits don't block slots)
       if (habit.isArchived) continue;
 
       final hStartMins = getStartMinutes(habit.startTime);
       final hEndMins = hStartMins + habit.durationMinutes;
 
-      // 3. Check for overlap logic: (StartA < EndB) and (EndA > StartB)
       if (newStartMins < hEndMins && newEndMins > hStartMins) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -140,10 +135,9 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             ),
           );
         }
-        return; // Stop the save process
+        return;
       }
     }
-    // --- VALIDATION END ---
 
     final notifier = ref.read(habitsProvider.notifier);
 
@@ -166,7 +160,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
       }
 
       if (mounted) {
-        // Only pop if we are in the standalone screen, not the embedded tab
         if (!widget.isEmbedded) Navigator.of(context).pop();
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -317,7 +310,6 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                   onPressed: () {
                     if (!_isDeleting) {
                       setState(() => _isDeleting = true);
-                      // Reset state after 3 seconds if not confirmed
                       Future.delayed(const Duration(seconds: 3), () {
                         if (mounted && _isDeleting) {
                           setState(() => _isDeleting = false);

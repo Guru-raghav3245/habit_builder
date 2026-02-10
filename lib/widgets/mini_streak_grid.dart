@@ -17,12 +17,10 @@ class MiniStreakGrid extends StatelessWidget {
     );
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Constants for layout
     const double boxSize = 12.0;
     const double spacing = 4.0;
     const int itemsPerRow = 7;
 
-    // Calculate the width required for exactly 7 boxes (7 boxes + 6 spacings)
     const double gridWidth =
         (boxSize * itemsPerRow) + (spacing * (itemsPerRow - 1));
 

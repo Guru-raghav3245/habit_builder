@@ -14,7 +14,6 @@ class NotificationService {
   static const String _channelName = 'Daily Habit Reminders';
   static const String _channelDescription = 'Reminders for your habits';
 
-  // This matches your file name in the res/drawable folders (without .png)
   static const String _notificationIcon = 'ic_stat_ic_launcher';
 
   static Future<void> init() async {
@@ -63,10 +62,6 @@ class NotificationService {
     }
   }
 
-  /// Schedules 3 notifications for a single habit:
-  /// 1. 5 minutes before start
-  /// 2. Exactly at start
-  /// 3. 5 minutes after start (if not already in app)
   static Future<void> scheduleDailyReminder(Habit habit) async {
     final int baseId = habit.id.hashCode;
 
@@ -94,7 +89,6 @@ class NotificationService {
     print(
         '🔔 [NotificationService] Today\'s startTime for "${habit.name}" -> $startTime (now=$now)');
 
-    // Notification 1: 5 Minutes Before
     await _zonedSchedule(
       baseId + 1,
       'Almost time!',
@@ -102,7 +96,6 @@ class NotificationService {
       startTime.subtract(const Duration(minutes: 5)),
     );
 
-    // Notification 2: At Start Time
     await _zonedSchedule(
       baseId,
       'Time for ${habit.name}!',
@@ -110,7 +103,6 @@ class NotificationService {
       startTime,
     );
 
-    // Notification 3: 5 Minutes After (The "Missed" reminder)
     await _zonedSchedule(
       baseId + 2,
       'Are you there?',
@@ -128,7 +120,6 @@ class NotificationService {
     final now = DateTime.now();
     var finalTime = scheduledTime;
 
-    // Always shift to future if the time has already passed (like your demo)
     if (finalTime.isBefore(now)) {
       finalTime = finalTime.add(const Duration(days: 1));
       print(
@@ -142,7 +133,6 @@ class NotificationService {
       );
     }
 
-    // Match the working demo: exactAllowWhileIdle
     const AndroidScheduleMode androidScheduleMode =
         AndroidScheduleMode.exactAllowWhileIdle;
     print(
@@ -170,7 +160,6 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: androidScheduleMode,
-      // Daily at this time for habits, same as your demo app
       matchDateTimeComponents: DateTimeComponents.time,
     );
 
@@ -214,7 +203,6 @@ class NotificationService {
     print('🔔 [NotificationService] testAlarm() notification.show() done');
   }
 
-  /// Direct 1-minute scheduled test (exact, one-shot)
   static Future<void> testScheduleInOneMinute() async {
     final now = DateTime.now();
     final inOneMinute = now.add(const Duration(minutes: 1));
@@ -242,7 +230,6 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      // null => fire once at this exact time, not daily
       matchDateTimeComponents: null,
     );
 

@@ -15,13 +15,11 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // 1. Initialize GoogleSignIn (Required in v7+)
     _initGoogleSignIn();
   }
 
   Future<void> _initGoogleSignIn() async {
     try {
-      // Required to setup the plugin before use
       await GoogleSignIn.instance.initialize();
     } catch (e) {
       debugPrint('Google Sign-In initialization failed: $e');
@@ -32,28 +30,20 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 2. Use 'authenticate()' instead of 'signIn()'
-      // In v7, this throws an exception if the user cancels, instead of returning null.
       final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
       
-      // 3. Get auth details (Note: accessToken is GONE in v7)
       final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
 
-      // 4. Create credential using ONLY idToken
-      // Firebase only needs idToken to verify identity. 
-      // accessToken is null because we didn't ask for extra permissions (like Drive/Calendar).
       final credential = GoogleAuthProvider.credential(
         accessToken: null, 
         idToken: googleAuth.idToken,
       );
 
-      // 5. Sign in to Firebase
       await FirebaseAuth.instance.signInWithCredential(credential);
       
     } on FirebaseAuthException catch (e) {
       _showError('Firebase Error: ${e.message}');
     } catch (e) {
-      // Ignore "canceled" errors (user closed the popup)
       if (e.toString().contains('canceled')) {
         debugPrint('User canceled sign in');
       } else {

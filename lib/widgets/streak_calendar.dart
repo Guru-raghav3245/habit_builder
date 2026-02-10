@@ -20,12 +20,11 @@ class StreakCalendar extends StatelessWidget {
     DayVisual? visualFor(DateTime date) {
       final d = _normalize(date);
 
-      // Return null if the date is outside the challenge range
       if (d.isBefore(start) || d.isAfter(end)) return null;
 
       return DayVisual(
         completed: habit.isCompletedOn(d),
-        // Uses the Habit model's logic to check if the day was missed or failed
+
         missed: habit.isMissedOn(d),
         isToday: d == today,
       );

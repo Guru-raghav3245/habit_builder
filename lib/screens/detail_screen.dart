@@ -18,7 +18,6 @@ class _DetailScreenState extends State<DetailScreen>
   @override
   void initState() {
     super.initState();
-    // Initialize with 2 tabs for Settings and Progress
     _tabController = TabController(length: 2, vsync: this);
   }
 
@@ -38,7 +37,7 @@ class _DetailScreenState extends State<DetailScreen>
           return [
             SliverAppBar(
               expandedHeight:
-                  kToolbarHeight, // Reduced to standard height to fix alignment
+                  kToolbarHeight,
               pinned: true,
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: theme.colorScheme.onPrimary,
@@ -62,7 +61,6 @@ class _DetailScreenState extends State<DetailScreen>
           ],
         ),
       ),
-      // Added bottomNavigationBar to place the TabBar at the bottom of the screen
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
