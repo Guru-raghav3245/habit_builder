@@ -8,7 +8,11 @@ set(BINARY_NAME "habitit")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
+<<<<<<< HEAD
 cmake_policy(SET CMP0063 NEW)
+=======
+cmake_policy(VERSION 3.14...3.25)
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 
 # Define build configuration option.
 get_property(IS_MULTICONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
@@ -87,6 +91,15 @@ if(PLUGIN_BUNDLED_LIBRARIES)
     COMPONENT Runtime)
 endif()
 
+<<<<<<< HEAD
+=======
+# Copy the native assets provided by the build.dart from all packages.
+set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/windows/")
+install(DIRECTORY "${NATIVE_ASSETS_DIR}"
+   DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+   COMPONENT Runtime)
+
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 # Fully re-copy the assets directory on each build to avoid having stale files
 # from a previous install.
 set(FLUTTER_ASSET_DIR_NAME "flutter_assets")

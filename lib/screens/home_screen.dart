@@ -2,8 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+<<<<<<< HEAD
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+=======
+import 'package:firebase_auth/firebase_auth.dart'; // Import this
+import 'package:google_sign_in/google_sign_in.dart'; // Import this
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 
 import 'package:habitit/providers/habits_provider.dart';
 import 'package:habitit/providers/settings_provider.dart';
@@ -28,27 +33,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void initState() {
     super.initState();
+<<<<<<< HEAD
     WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+=======
+    print('🏠 [HomeScreen] initState');
+    WidgetsBinding.instance.addObserver(this);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      print(
+        '🏠 [HomeScreen] Post-frame callback -> _initNotificationsAndLogic',
+      );
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
       await _initNotifications();
       _runAutomatedLogic();
     });
   }
 
   Future<void> _initNotifications() async {
+<<<<<<< HEAD
     await NotificationService.init();
     final habitsState = ref.read(habitsProvider);
     final habits = habitsState.habits.asData?.value ?? [];
+=======
+    print('🏠 [HomeScreen] _initNotifications() start');
+    await NotificationService.init();
+
+    final habitsState = ref.read(habitsProvider);
+    final habits = habitsState.habits.asData?.value ?? [];
+    print(
+      '🏠 [HomeScreen] Rescheduling notifications for ${habits.length} habits',
+    );
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
     for (final habit in habits) {
       if (habit.reminderEnabled && !habit.isArchived) {
         await NotificationService.scheduleDailyReminder(habit);
       }
     }
+<<<<<<< HEAD
+=======
+    print('🏠 [HomeScreen] _initNotifications() done');
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
   }
 
   @override
   void dispose() {
+<<<<<<< HEAD
+=======
+    print('🏠 [HomeScreen] dispose');
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
     _nextCheckTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -56,7 +90,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+<<<<<<< HEAD
     if (state == AppLifecycleState.resumed) {
+=======
+    print('🏠 [HomeScreen] didChangeAppLifecycleState: $state');
+    if (state == AppLifecycleState.resumed) {
+      print('🏠 [HomeScreen] App resumed -> reload habits and logic');
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
       ref.read(habitsProvider.notifier).loadHabits();
       _runAutomatedLogic();
     } else if (state == AppLifecycleState.paused) {
@@ -66,6 +106,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   void _scheduleNextCheck() {
     _nextCheckTimer?.cancel();
+<<<<<<< HEAD
+=======
+
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
     final habitsState = ref.read(habitsProvider);
     final habits = habitsState.habits.asData?.value ?? [];
     if (habits.isEmpty) return;
@@ -75,6 +119,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     for (final habit in habits) {
       if (habit.isArchived || habit.isCompletedToday) continue;
+<<<<<<< HEAD
       final todayStart = DateTime(now.year, now.month, now.day, habit.startTime.hour, habit.startTime.minute);
       final todayEnd = todayStart.add(Duration(minutes: habit.durationMinutes));
 
@@ -83,17 +128,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
       if (now.isAfter(todayStart) && now.isBefore(todayEnd)) {
         if (nextEventTime == null || todayEnd.isBefore(nextEventTime)) nextEventTime = todayEnd;
+=======
+
+      final todayStart = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        habit.startTime.hour,
+        habit.startTime.minute,
+      );
+      final todayEnd = todayStart.add(Duration(minutes: habit.durationMinutes));
+
+      if (todayStart.isAfter(now)) {
+        if (nextEventTime == null || todayStart.isBefore(nextEventTime)) {
+          nextEventTime = todayStart;
+        }
+      }
+
+      if (now.isAfter(todayStart) && now.isBefore(todayEnd)) {
+        if (nextEventTime == null || todayEnd.isBefore(nextEventTime)) {
+          nextEventTime = todayEnd;
+        }
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
       }
     }
 
     if (nextEventTime != null) {
       final difference = nextEventTime.difference(now);
+<<<<<<< HEAD
       _nextCheckTimer = Timer(difference + const Duration(seconds: 1), _runAutomatedLogic);
+=======
+      final duration = difference + const Duration(seconds: 1);
+      
+      print('🏠 [HomeScreen] Scheduling next check in ${duration.inSeconds}s at $nextEventTime');
+      _nextCheckTimer = Timer(duration, _runAutomatedLogic);
+    } else {
+      print('🏠 [HomeScreen] No upcoming habit events today.');
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
     }
   }
 
   void _runAutomatedLogic() {
+<<<<<<< HEAD
     if (!mounted || _isTransitioning) return;
+=======
+    if (!mounted) {
+      print('🏠 [HomeScreen] _runAutomatedLogic() called but not mounted');
+      return;
+    }
+
+    if (_isTransitioning) {
+      return;
+    }
+
+    print('🏠 [HomeScreen] _runAutomatedLogic() running');
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
     ref.read(habitsProvider.notifier).refreshHabitStatuses();
 
     final habitsState = ref.read(habitsProvider);
@@ -101,7 +190,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       bool pushedScreen = false;
       for (final habit in habits) {
         final isFailed = habitsState.failedHabitIds.contains(habit.id);
+<<<<<<< HEAD
         if (habit.isActiveNow && !habit.isCompletedToday && !habit.isArchived && !isFailed) {
+=======
+
+        if (habit.isActiveNow &&
+            !habit.isCompletedToday &&
+            !habit.isArchived &&
+            !isFailed) {
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
           _isTransitioning = true;
           pushedScreen = true;
           Navigator.push(
@@ -117,7 +214,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           break;
         }
       }
+<<<<<<< HEAD
       if (!pushedScreen) _scheduleNextCheck();
+=======
+      
+      if (!pushedScreen) {
+        _scheduleNextCheck();
+      }
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
     });
   }
 
@@ -133,6 +237,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   Widget build(BuildContext context) {
     ref.listen(habitsProvider, (_, __) => _scheduleNextCheck());
+<<<<<<< HEAD
+=======
+    
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
     final habitsState = ref.watch(habitsProvider);
     final theme = Theme.of(context);
 
@@ -157,9 +265,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   tooltip: 'Logout',
                   onPressed: () async {
                     await FirebaseAuth.instance.signOut();
+<<<<<<< HEAD
                     try {
                       // Created a new instance to call signOut
                       await GoogleSignIn().signOut();
+=======
+                    
+                    try {
+                      await GoogleSignIn.instance.signOut();
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
                     } catch (e) {
                       print('Error signing out of Google: $e');
                     }
@@ -169,14 +283,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ],
               flexibleSpace: FlexibleSpaceBar(
                 titlePadding: const EdgeInsets.only(bottom: 16),
+<<<<<<< HEAD
                 title: const Text('My Habits', style: TextStyle(fontWeight: FontWeight.bold)),
+=======
+                title: const Text(
+                  'My Habits',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
                 centerTitle: true,
                 background: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
+<<<<<<< HEAD
                       colors: [theme.colorScheme.primary, theme.colorScheme.primaryContainer],
+=======
+                      colors: [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.primaryContainer,
+                      ],
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
                     ),
                   ),
                 ),
@@ -188,12 +316,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('Error: $error')),
           data: (habits) {
+<<<<<<< HEAD
             if (habits.isEmpty) return const Center(child: Text('No habits yet.'));
+=======
+            if (habits.isEmpty) {
+              return const Center(child: Text('No habits yet.'));
+            }
+
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
             final activeHabits = habits.where((h) => !h.isArchived).toList();
             final archivedHabits = habits.where((h) => h.isArchived).toList();
 
             return ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+<<<<<<< HEAD
               itemCount: (activeHabits.isNotEmpty ? activeHabits.length + 1 : 0) + (archivedHabits.isNotEmpty ? archivedHabits.length + 1 : 0),
               itemBuilder: (context, index) {
                 if (activeHabits.isNotEmpty) {
@@ -208,6 +344,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 if (archivedHabits.isNotEmpty) {
                   if (relativeArchivedIndex == 0) return const _SectionHeader(text: 'COMPLETED JOURNEYS 🏆', color: Colors.green);
                   return HabitCard(habit: archivedHabits[relativeArchivedIndex - 1], isArchived: true);
+=======
+              itemCount:
+                  (activeHabits.isNotEmpty ? activeHabits.length + 1 : 0) +
+                  (archivedHabits.isNotEmpty ? archivedHabits.length + 1 : 0),
+              itemBuilder: (context, index) {
+                if (activeHabits.isNotEmpty) {
+                  if (index == 0) {
+                    return const _SectionHeader(text: 'ACTIVE CHALLENGES');
+                  }
+                  if (index <= activeHabits.length) {
+                    final habit = activeHabits[index - 1];
+                    final isFailed = habitsState.failedHabitIds.contains(
+                      habit.id,
+                    );
+                    return HabitCard(
+                      habit: habit.copyWith(isFailedToday: isFailed),
+                    );
+                  }
+                }
+
+                final archivedStartIndex = activeHabits.isNotEmpty
+                    ? activeHabits.length + 1
+                    : 0;
+                final relativeArchivedIndex = index - archivedStartIndex;
+
+                if (archivedHabits.isNotEmpty) {
+                  if (relativeArchivedIndex == 0) {
+                    return const _SectionHeader(
+                      text: 'COMPLETED JOURNEYS 🏆',
+                      color: Colors.green,
+                    );
+                  }
+                  final habit = archivedHabits[relativeArchivedIndex - 1];
+                  return HabitCard(habit: habit, isArchived: true);
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
                 }
                 return const SizedBox.shrink();
               },
@@ -216,7 +387,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+<<<<<<< HEAD
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEditHabitScreen())),
+=======
+        onPressed: () {
+          print('🏠 [HomeScreen] Add Habit FAB tapped');
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AddEditHabitScreen()),
+          );
+        },
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
         icon: const Icon(Icons.add),
         label: const Text('Add Habit'),
       ),
@@ -225,7 +406,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 }
 
+<<<<<<< HEAD
 // Keep SectionHeader, HabitCard, and ThemeSettingsModal implementation as is...
+=======
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 class _SectionHeader extends StatelessWidget {
   final String text;
   final Color? color;
@@ -288,6 +472,17 @@ class HabitCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
+<<<<<<< HEAD
+=======
+          print('🏠 [HomeScreen] HabitCard tapped -> "${habit.name}"');
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
+          );
+        },
+        onLongPress: () {
+          print('🏠 [HomeScreen] HabitCard long-pressed -> "${habit.name}"');
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => DetailScreen(habit: habit)),
@@ -298,6 +493,10 @@ class HabitCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+<<<<<<< HEAD
+=======
+              // Header Row
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [

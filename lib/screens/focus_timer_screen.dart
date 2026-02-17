@@ -49,12 +49,31 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
 
   void _updateTime() {
     final now = DateTime.now();
+<<<<<<< HEAD
     final startTime = DateTime(now.year, now.month, now.day, widget.habit.startTime.hour, widget.habit.startTime.minute);
     final endTime = startTime.add(Duration(minutes: widget.habit.durationMinutes));
 
     if (mounted) {
       setState(() {
         _remainingSeconds = now.isAfter(endTime) ? 0 : endTime.difference(now).inSeconds;
+=======
+    final startTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      widget.habit.startTime.hour,
+      widget.habit.startTime.minute,
+    );
+    final endTime = startTime.add(
+      Duration(minutes: widget.habit.durationMinutes),
+    );
+
+    if (mounted) {
+      setState(() {
+        _remainingSeconds = now.isAfter(endTime)
+            ? 0
+            : endTime.difference(now).inSeconds;
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
       });
     }
 
@@ -67,7 +86,14 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
     ref.read(habitsProvider.notifier).markAsDone(widget.habit.id);
     _exit();
     ScaffoldMessenger.of(context).showSnackBar(
+<<<<<<< HEAD
       const SnackBar(content: Text('Well done! Habit completed. 🎉'), backgroundColor: Colors.green),
+=======
+      const SnackBar(
+        content: Text('Well done! Habit completed. 🎉'),
+        backgroundColor: Colors.green,
+      ),
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
     );
   }
 
@@ -75,7 +101,14 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
     ref.read(habitsProvider.notifier).markAsFailed(widget.habit.id);
     _exit();
     ScaffoldMessenger.of(context).showSnackBar(
+<<<<<<< HEAD
       const SnackBar(content: Text('Session cancelled. Habit failed for today.'), backgroundColor: Colors.redAccent),
+=======
+      const SnackBar(
+        content: Text('Session cancelled. Habit failed for today.'),
+        backgroundColor: Colors.redAccent,
+      ),
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
     );
   }
 
@@ -98,10 +131,16 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
     final m = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
     final s = (_remainingSeconds % 60).toString().padLeft(2, '0');
 
+<<<<<<< HEAD
     // Updated PopScope to use correct widget structure
     return AndroidGestureExclusionContainer(
       child: WillPopScope(
         onWillPop: () async => false,
+=======
+    return AndroidGestureExclusionContainer(
+      child: PopScope(
+        canPop: false,
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
         child: Scaffold(
           backgroundColor: Colors.black,
           body: Center(
@@ -110,7 +149,14 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
                 const SizedBox(height: 100),
                 Text(
                   widget.habit.name.toUpperCase(),
+<<<<<<< HEAD
                   style: const TextStyle(color: Colors.white38, letterSpacing: 6),
+=======
+                  style: const TextStyle(
+                    color: Colors.white38,
+                    letterSpacing: 6,
+                  ),
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
                 ),
                 const Spacer(),
                 Stack(
@@ -127,7 +173,16 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
                     ),
                     Text(
                       '$m:$s',
+<<<<<<< HEAD
                       style: const TextStyle(fontSize: 80, fontWeight: FontWeight.w100, color: Colors.white, letterSpacing: 4),
+=======
+                      style: const TextStyle(
+                        fontSize: 80,
+                        fontWeight: FontWeight.w100,
+                        color: Colors.white,
+                        letterSpacing: 4,
+                      ),
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
                     ),
                   ],
                 ),
@@ -139,18 +194,42 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
                   child: AnimatedBuilder(
                     animation: _holdController,
                     builder: (context, _) => Container(
+<<<<<<< HEAD
                       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
+=======
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 20,
+                        horizontal: 40,
+                      ),
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(40),
                         border: Border.all(color: Colors.red.withOpacity(0.3)),
                         gradient: LinearGradient(
+<<<<<<< HEAD
                           colors: [Colors.red.withOpacity(0.5), Colors.transparent],
+=======
+                          colors: [
+                            Colors.red.withOpacity(0.5),
+                            Colors.transparent,
+                          ],
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
                           stops: [_holdController.value, _holdController.value],
                         ),
                       ),
                       child: Text(
+<<<<<<< HEAD
                         _holdController.value > 0 ? 'KEEP HOLDING...' : 'HOLD TO GIVE UP',
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+=======
+                        _holdController.value > 0
+                            ? 'KEEP HOLDING...'
+                            : 'HOLD TO GIVE UP',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
                       ),
                     ),
                   ),
@@ -163,4 +242,8 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd

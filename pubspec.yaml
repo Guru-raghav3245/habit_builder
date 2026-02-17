@@ -1,5 +1,9 @@
 name: habitit
+<<<<<<< HEAD
 description: A new Flutter project.
+=======
+description: "A new Flutter project."
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,10 +20,17 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
+<<<<<<< HEAD
 version: 1.0.0+1
 
 environment:
   sdk: '>=3.0.6 <4.0.0'
+=======
+version: 1.0.1+2
+
+environment:
+  sdk: ^3.10.7
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -31,6 +42,7 @@ dependencies:
   flutter:
     sdk: flutter
 
+<<<<<<< HEAD
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -47,6 +59,26 @@ dependencies:
   timezone: ^0.9.4
   wakelock_plus: ^1.1.4
   android_gesture_exclusion: ^0.4.0
+=======
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^3.2.0
+  table_calendar: ^3.2.0
+  flutter_local_notifications: ^19.5.0
+  shared_preferences: ^2.5.4
+  wakelock_plus: ^1.4.0
+  android_gesture_exclusion: ^0.4.0
+  uuid: ^4.5.2
+  flutter_timezone: ^5.0.1
+  timezone: ^0.10.1
+  intl: ^0.20.2
+  google_fonts: ^8.0.0
+  firebase_core: ^4.4.0
+  firebase_auth: ^6.1.4
+  google_sign_in: ^7.2.0
+  cloud_firestore: ^6.1.2
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 
 dev_dependencies:
   flutter_test:
@@ -57,7 +89,11 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
+<<<<<<< HEAD
   flutter_lints: ^2.0.0
+=======
+  flutter_lints: ^6.0.0
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -76,10 +112,17 @@ flutter:
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
+<<<<<<< HEAD
   # https://flutter.dev/assets-and-images/#resolution-aware
 
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/assets-and-images/#from-packages
+=======
+  # https://flutter.dev/to/resolution-aware-images
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/to/asset-from-package
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 
   # To add custom fonts to your application, add a fonts section here,
   # in this "flutter" section. Each entry in this list should have a
@@ -99,4 +142,8 @@ flutter:
   #         weight: 700
   #
   # For details regarding fonts from package dependencies,
+<<<<<<< HEAD
   # see https://flutter.dev/custom-fonts/#from-packages
+=======
+  # see https://flutter.dev/to/font-from-package
+>>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
