@@ -12,7 +12,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   // Initialize GoogleSignIn as a class member
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(serverClientId: '929412639791-aiuidsi5fokp95i5dq2fnpqbfos9418l.apps.googleusercontent.com');
 
   @override
   void initState() {

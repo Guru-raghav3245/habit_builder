@@ -369,13 +369,17 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         color: colorScheme.surfaceVariant.withOpacity(0.2),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: _wheelColumn(
-        context,
-        _durationController,
-        120,
-        _durationNotifier,
-        'min',
-        offset: 1,
+      child: Row(
+        children: [
+          _wheelColumn(
+            context,
+            _durationController,
+            120,
+            _durationNotifier,
+            'min',
+            offset: 1,
+          ),
+        ],
       ),
     );
   }

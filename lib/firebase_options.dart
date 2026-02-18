@@ -54,9 +54,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDl60EbPqhY1gL3nwxNc7BpUslQSr9xBvw',
-    appId: '1:929412639791:android:14aea1a0d1a7b7ef7a6ada',
+    appId: '1:929412639791:android:5b364139c2fa60b27a6ada',
     messagingSenderId: '929412639791',
     projectId: 'habitit-cfedb',
     storageBucket: 'habitit-cfedb.firebasestorage.app',
   );
+
 }

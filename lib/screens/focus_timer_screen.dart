@@ -18,7 +18,7 @@ class FocusTimerScreen extends ConsumerStatefulWidget {
 
 class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
     with TickerProviderStateMixin {
-  late Timer _ticker;
+  Timer? _ticker;
   late int _remainingSeconds;
   late int _totalSeconds;
   late AnimationController _holdController;
@@ -31,6 +31,8 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
     NotificationService.cancelLateReminder(widget.habit.id);
 
     _totalSeconds = widget.habit.durationMinutes * 60;
+
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
     _updateTime();
 
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
@@ -80,13 +82,13 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
   }
 
   void _exit() {
-    _ticker.cancel();
+    _ticker?.cancel();
     if (mounted) Navigator.of(context).pop();
   }
 
   @override
   void dispose() {
-    _ticker.cancel();
+    _ticker?.cancel();
     _holdController.dispose();
     WakelockPlus.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);

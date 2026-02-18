@@ -59,6 +59,22 @@
           }
         },
         {
+          "client_id": "929412639791-74ek9bgqgjq9asko794q52orvvl5561s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.guru.habitit",
+            "certificate_hash": "7722447b2b343bd76ecc85ab92d311ea165bd204"
+          }
+        },
+        {
+          "client_id": "929412639791-cj7ftqgrlrf3b6sqe7qdci7tp8v3o71m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.guru.habitit",
+            "certificate_hash": "d8ebb46df793ac77bf172f23530919e75f0a7411"
+          }
+        },
+        {
           "client_id": "929412639791-aiuidsi5fokp95i5dq2fnpqbfos9418l.apps.googleusercontent.com",
           "client_type": 3
         }
