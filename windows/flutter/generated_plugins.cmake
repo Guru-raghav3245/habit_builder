@@ -3,22 +3,12 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-<<<<<<< HEAD
-  firebase_auth
-  firebase_core
-)
-
-list(APPEND FLUTTER_FFI_PLUGIN_LIST
-=======
   cloud_firestore
   firebase_auth
   firebase_core
-  flutter_timezone
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
-  flutter_local_notifications_windows
->>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

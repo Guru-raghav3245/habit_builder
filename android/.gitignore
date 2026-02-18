@@ -5,16 +5,9 @@ gradle-wrapper.jar
 /gradlew.bat
 /local.properties
 GeneratedPluginRegistrant.java
-<<<<<<< HEAD
 
 # Remember to never publicly share your keystore.
 # See https://flutter.dev/docs/deployment/android#reference-the-keystore-from-the-app
-=======
-.cxx/
-
-# Remember to never publicly share your keystore.
-# See https://flutter.dev/to/reference-keystore
->>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 key.properties
 **/*.keystore
 **/*.jks

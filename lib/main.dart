@@ -1,19 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-<<<<<<< HEAD
-=======
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import Auth
->>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 import 'package:habitit/screens/home_screen.dart';
 import 'package:habitit/screens/login_screen.dart'; // Import Login Screen
 import 'package:habitit/services/notification_service.dart';
 import 'package:habitit/providers/settings_provider.dart';
-<<<<<<< HEAD
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-=======
->>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 import 'firebase_options.dart';
 
 void main() async {

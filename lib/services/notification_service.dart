@@ -14,11 +14,7 @@ class NotificationService {
   static const String _channelName = 'Daily Habit Reminders';
   static const String _channelDescription = 'Reminders for your habits';
 
-<<<<<<< HEAD
   static const String _notificationIcon = '@mipmap/ic_launcher';
-=======
-  static const String _notificationIcon = 'ic_stat_ic_launcher';
->>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 
   static Future<void> init() async {
     print('🔔 [NotificationService] init() called');
@@ -165,10 +161,7 @@ class NotificationService {
       ),
       androidScheduleMode: androidScheduleMode,
       matchDateTimeComponents: DateTimeComponents.time,
-<<<<<<< HEAD
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-=======
->>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
     );
 
     print(
@@ -239,10 +232,7 @@ class NotificationService {
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: null,
-<<<<<<< HEAD
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime
-=======
->>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
     );
 
     print(

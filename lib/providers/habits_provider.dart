@@ -1,8 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-<<<<<<< HEAD
-=======
-import 'package:flutter_riverpod/legacy.dart';
->>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:habitit/models/habit.dart';

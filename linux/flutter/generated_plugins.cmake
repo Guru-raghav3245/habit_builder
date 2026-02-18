@@ -3,10 +3,6 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-<<<<<<< HEAD
-=======
-  flutter_timezone
->>>>>>> 04f3ca18835184e4d0699148f9c8d4abef065edd
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
