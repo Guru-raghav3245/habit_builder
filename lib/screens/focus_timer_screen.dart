@@ -22,6 +22,7 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
   late int _remainingSeconds;
   late int _totalSeconds;
   late AnimationController _holdController;
+  bool _sessionEnded = false; // guard against calling _completeSession twice
 
   @override
   void initState() {
@@ -32,10 +33,10 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
 
     _totalSeconds = widget.habit.durationMinutes * 60;
 
+    // Fix: was created twice before — only create once
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
     _updateTime();
 
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
     _holdController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -50,15 +51,23 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
   }
 
   void _updateTime() {
+    // Guard: if widget is disposed or session already ended, stop
+    if (!mounted || _sessionEnded) {
+      _ticker?.cancel();
+      return;
+    }
+
     final now = DateTime.now();
-    final startTime = DateTime(now.year, now.month, now.day, widget.habit.startTime.hour, widget.habit.startTime.minute);
+    final startTime = DateTime(
+      now.year, now.month, now.day,
+      widget.habit.startTime.hour,
+      widget.habit.startTime.minute,
+    );
     final endTime = startTime.add(Duration(minutes: widget.habit.durationMinutes));
 
-    if (mounted) {
-      setState(() {
-        _remainingSeconds = now.isAfter(endTime) ? 0 : endTime.difference(now).inSeconds;
-      });
-    }
+    setState(() {
+      _remainingSeconds = now.isAfter(endTime) ? 0 : endTime.difference(now).inSeconds;
+    });
 
     if (_remainingSeconds <= 0) {
       _completeSession();
@@ -66,24 +75,43 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
   }
 
   void _completeSession() {
+    // Guard: only run once, and only if still mounted
+    if (_sessionEnded || !mounted) return;
+    _sessionEnded = true;
+    _ticker?.cancel();
+
     ref.read(habitsProvider.notifier).markAsDone(widget.habit.id);
-    _exit();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Well done! Habit completed. 🎉'), backgroundColor: Colors.green),
-    );
+
+    Navigator.of(context).pop();
+
+    // Show snackbar after pop using the parent context via a post-frame callback
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Well done! Habit completed. 🎉'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    });
   }
 
   void _giveUp() {
-    ref.read(habitsProvider.notifier).markAsFailed(widget.habit.id);
-    _exit();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Session cancelled. Habit failed for today.'), backgroundColor: Colors.redAccent),
-    );
-  }
-
-  void _exit() {
+    if (_sessionEnded || !mounted) return;
+    _sessionEnded = true;
     _ticker?.cancel();
-    if (mounted) Navigator.of(context).pop();
+
+    ref.read(habitsProvider.notifier).markAsFailed(widget.habit.id);
+
+    Navigator.of(context).pop();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Session cancelled. Habit failed for today.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    });
   }
 
   @override
@@ -100,7 +128,6 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
     final m = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
     final s = (_remainingSeconds % 60).toString().padLeft(2, '0');
 
-    // Updated PopScope to use correct widget structure
     return AndroidGestureExclusionContainer(
       child: WillPopScope(
         onWillPop: () async => false,
@@ -129,7 +156,12 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
                     ),
                     Text(
                       '$m:$s',
-                      style: const TextStyle(fontSize: 80, fontWeight: FontWeight.w100, color: Colors.white, letterSpacing: 4),
+                      style: const TextStyle(
+                        fontSize: 80,
+                        fontWeight: FontWeight.w100,
+                        color: Colors.white,
+                        letterSpacing: 4,
+                      ),
                     ),
                   ],
                 ),
@@ -152,7 +184,10 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen>
                       ),
                       child: Text(
                         _holdController.value > 0 ? 'KEEP HOLDING...' : 'HOLD TO GIVE UP',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),

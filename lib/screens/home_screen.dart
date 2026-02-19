@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'package:habitit/screens/notfication_test_screen.dart';
 import 'package:habitit/providers/habits_provider.dart';
 import 'package:habitit/providers/settings_provider.dart';
 import 'package:habitit/screens/add_edit_habit_screen.dart';
@@ -41,6 +41,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     for (final habit in habits) {
       if (habit.reminderEnabled && !habit.isArchived) {
         await NotificationService.scheduleDailyReminder(habit);
+      }
+    }
+  }
+
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Log out'),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Log out', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await FirebaseAuth.instance.signOut();
+      // Firebase auth state listener in your app root should handle
+      // navigation to the login screen automatically.
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $e'), backgroundColor: Colors.red),
+        );
       }
     }
   }
@@ -151,26 +185,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               stretch: true,
               scrolledUnderElevation: 0,
               backgroundColor: theme.colorScheme.primaryContainer,
-              // Update the actions list in the SliverAppBar within lib/screens/home_screen.dart
-
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.bug_report_rounded),
-                  tooltip: 'Test Notifications',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const NotificationTestScreen()),
-                    );
-                  },
+                  icon: const Icon(Icons.logout_rounded),
+                  tooltip: 'Log out',
+                  onPressed: _logout,
                 ),
                 IconButton(
                   icon: const Icon(Icons.palette_rounded),
                   tooltip: 'Customize Theme',
                   onPressed: () => _showThemeSettings(context),
                 ),
-                // ... rest of your existing actions (Logout, etc.)
               ],
               flexibleSpace: FlexibleSpaceBar(
                 titlePadding: const EdgeInsets.only(bottom: 16),
@@ -248,7 +273,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 }
 
-// Keep SectionHeader, HabitCard, and ThemeSettingsModal implementation as is...
 class _SectionHeader extends StatelessWidget {
   final String text;
   final Color? color;

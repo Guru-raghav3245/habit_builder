@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter_timezone/flutter_timezone.dart';
 
 import 'package:habitit/models/habit.dart';
 
@@ -20,6 +21,10 @@ class NotificationService {
     print('🔔 [NotificationService] init() called');
 
     tz.initializeTimeZones();
+
+    final String timeZoneName = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(timeZoneName));
+    print('🔔 [NotificationService] timezone set to: $timeZoneName');
 
     const AndroidInitializationSettings android =
         AndroidInitializationSettings(_notificationIcon);
@@ -65,8 +70,7 @@ class NotificationService {
   static Future<void> scheduleDailyReminder(Habit habit) async {
     final int baseId = habit.id.hashCode;
 
-    print(
-        '🔔 [NotificationService] scheduleDailyReminder for "${habit.name}" '
+    print('🔔 [NotificationService] scheduleDailyReminder for "${habit.name}" '
         '(id=${habit.id}, baseId=$baseId, reminderEnabled=${habit.reminderEnabled}, archived=${habit.isArchived})');
 
     await cancelAllHabitReminders(habit.id);
@@ -161,7 +165,8 @@ class NotificationService {
       ),
       androidScheduleMode: androidScheduleMode,
       matchDateTimeComponents: DateTimeComponents.time,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
 
     print(
@@ -206,27 +211,27 @@ class NotificationService {
 
 // Add this method inside the NotificationService class in lib/services/notification_service.dart
 
-static Future<void> testScheduleNextMinute() async {
-  final now = DateTime.now();
-  // Set the time to the 00 second mark of the next minute
-  final nextMinute = DateTime(
-    now.year,
-    now.month,
-    now.day,
-    now.hour,
-    now.minute + 1,
-  );
-  
-  print('🔔 [NotificationService] testScheduleNextMinute at $nextMinute');
+  static Future<void> testScheduleNextMinute() async {
+    final now = DateTime.now();
+    // Set the time to the 00 second mark of the next minute
+    final nextMinute = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute + 1,
+    );
 
-  // Uses the existing _zonedSchedule function to handle timezone logic
-  await _zonedSchedule(
-    123456, // Unique ID for this test
-    'Next Minute Test',
-    'This notification was scheduled for the start of the next minute.',
-    nextMinute,
-  );
-}
+    print('🔔 [NotificationService] testScheduleNextMinute at $nextMinute');
+
+    // Uses the existing _zonedSchedule function to handle timezone logic
+    await _zonedSchedule(
+      123456, // Unique ID for this test
+      'Next Minute Test',
+      'This notification was scheduled for the start of the next minute.',
+      nextMinute,
+    );
+  }
 
   static Future<void> testScheduleInOneMinute() async {
     final now = DateTime.now();
@@ -238,26 +243,26 @@ static Future<void> testScheduleNextMinute() async {
     print('🔔 [NotificationService] testScheduleInOneMinute tzDate=$tzDate');
 
     await _notifications.zonedSchedule(
-      987654,
-      'Plain Schedule Test',
-      'Testing scheduled notification in 1 minute (exact, one-shot)',
-      tzDate,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: _channelDescription,
-          importance: Importance.max,
-          priority: Priority.high,
-          playSound: true,
-          enableVibration: true,
-          icon: _notificationIcon,
+        987654,
+        'Plain Schedule Test',
+        'Testing scheduled notification in 1 minute (exact, one-shot)',
+        tzDate,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channelId,
+            _channelName,
+            channelDescription: _channelDescription,
+            importance: Importance.max,
+            priority: Priority.high,
+            playSound: true,
+            enableVibration: true,
+            icon: _notificationIcon,
+          ),
         ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: null,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: null,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime);
 
     print(
         '🔔 [NotificationService] testScheduleInOneMinute scheduled at $tzDate');
