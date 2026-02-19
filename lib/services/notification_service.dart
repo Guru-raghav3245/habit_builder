@@ -204,6 +204,30 @@ class NotificationService {
     print('🔔 [NotificationService] testAlarm() notification.show() done');
   }
 
+// Add this method inside the NotificationService class in lib/services/notification_service.dart
+
+static Future<void> testScheduleNextMinute() async {
+  final now = DateTime.now();
+  // Set the time to the 00 second mark of the next minute
+  final nextMinute = DateTime(
+    now.year,
+    now.month,
+    now.day,
+    now.hour,
+    now.minute + 1,
+  );
+  
+  print('🔔 [NotificationService] testScheduleNextMinute at $nextMinute');
+
+  // Uses the existing _zonedSchedule function to handle timezone logic
+  await _zonedSchedule(
+    123456, // Unique ID for this test
+    'Next Minute Test',
+    'This notification was scheduled for the start of the next minute.',
+    nextMinute,
+  );
+}
+
   static Future<void> testScheduleInOneMinute() async {
     final now = DateTime.now();
     final inOneMinute = now.add(const Duration(minutes: 1));

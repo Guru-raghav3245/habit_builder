@@ -2,9 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-
+import 'package:habitit/screens/notfication_test_screen.dart';
 import 'package:habitit/providers/habits_provider.dart';
 import 'package:habitit/providers/settings_provider.dart';
 import 'package:habitit/screens/add_edit_habit_screen.dart';
@@ -75,20 +73,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     for (final habit in habits) {
       if (habit.isArchived || habit.isCompletedToday) continue;
-      final todayStart = DateTime(now.year, now.month, now.day, habit.startTime.hour, habit.startTime.minute);
+      final todayStart = DateTime(now.year, now.month, now.day,
+          habit.startTime.hour, habit.startTime.minute);
       final todayEnd = todayStart.add(Duration(minutes: habit.durationMinutes));
 
       if (todayStart.isAfter(now)) {
-        if (nextEventTime == null || todayStart.isBefore(nextEventTime)) nextEventTime = todayStart;
+        if (nextEventTime == null || todayStart.isBefore(nextEventTime))
+          nextEventTime = todayStart;
       }
       if (now.isAfter(todayStart) && now.isBefore(todayEnd)) {
-        if (nextEventTime == null || todayEnd.isBefore(nextEventTime)) nextEventTime = todayEnd;
+        if (nextEventTime == null || todayEnd.isBefore(nextEventTime))
+          nextEventTime = todayEnd;
       }
     }
 
     if (nextEventTime != null) {
       final difference = nextEventTime.difference(now);
-      _nextCheckTimer = Timer(difference + const Duration(seconds: 1), _runAutomatedLogic);
+      _nextCheckTimer =
+          Timer(difference + const Duration(seconds: 1), _runAutomatedLogic);
     }
   }
 
@@ -101,7 +103,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       bool pushedScreen = false;
       for (final habit in habits) {
         final isFailed = habitsState.failedHabitIds.contains(habit.id);
-        if (habit.isActiveNow && !habit.isCompletedToday && !habit.isArchived && !isFailed) {
+        if (habit.isActiveNow &&
+            !habit.isCompletedToday &&
+            !habit.isArchived &&
+            !isFailed) {
           _isTransitioning = true;
           pushedScreen = true;
           Navigator.push(
@@ -146,37 +151,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               stretch: true,
               scrolledUnderElevation: 0,
               backgroundColor: theme.colorScheme.primaryContainer,
+              // Update the actions list in the SliverAppBar within lib/screens/home_screen.dart
+
               actions: [
+                IconButton(
+                  icon: const Icon(Icons.bug_report_rounded),
+                  tooltip: 'Test Notifications',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const NotificationTestScreen()),
+                    );
+                  },
+                ),
                 IconButton(
                   icon: const Icon(Icons.palette_rounded),
                   tooltip: 'Customize Theme',
                   onPressed: () => _showThemeSettings(context),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.logout_rounded),
-                  tooltip: 'Logout',
-                  onPressed: () async {
-                    await FirebaseAuth.instance.signOut();
-                    try {
-                      // Created a new instance to call signOut
-                      await GoogleSignIn().signOut();
-                    } catch (e) {
-                      print('Error signing out of Google: $e');
-                    }
-                  },
-                ),
-                const SizedBox(width: 8),
+                // ... rest of your existing actions (Logout, etc.)
               ],
               flexibleSpace: FlexibleSpaceBar(
                 titlePadding: const EdgeInsets.only(bottom: 16),
-                title: const Text('My Habits', style: TextStyle(fontWeight: FontWeight.bold)),
+                title: const Text('My Habits',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 centerTitle: true,
                 background: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [theme.colorScheme.primary, theme.colorScheme.primaryContainer],
+                      colors: [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.primaryContainer
+                      ],
                     ),
                   ),
                 ),
@@ -188,26 +197,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('Error: $error')),
           data: (habits) {
-            if (habits.isEmpty) return const Center(child: Text('No habits yet.'));
+            if (habits.isEmpty)
+              return const Center(child: Text('No habits yet.'));
             final activeHabits = habits.where((h) => !h.isArchived).toList();
             final archivedHabits = habits.where((h) => h.isArchived).toList();
 
             return ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-              itemCount: (activeHabits.isNotEmpty ? activeHabits.length + 1 : 0) + (archivedHabits.isNotEmpty ? archivedHabits.length + 1 : 0),
+              itemCount: (activeHabits.isNotEmpty
+                      ? activeHabits.length + 1
+                      : 0) +
+                  (archivedHabits.isNotEmpty ? archivedHabits.length + 1 : 0),
               itemBuilder: (context, index) {
                 if (activeHabits.isNotEmpty) {
-                  if (index == 0) return const _SectionHeader(text: 'ACTIVE CHALLENGES');
+                  if (index == 0)
+                    return const _SectionHeader(text: 'ACTIVE CHALLENGES');
                   if (index <= activeHabits.length) {
                     final habit = activeHabits[index - 1];
-                    return HabitCard(habit: habit.copyWith(isFailedToday: habitsState.failedHabitIds.contains(habit.id)));
+                    return HabitCard(
+                        habit: habit.copyWith(
+                            isFailedToday:
+                                habitsState.failedHabitIds.contains(habit.id)));
                   }
                 }
-                final archivedStartIndex = activeHabits.isNotEmpty ? activeHabits.length + 1 : 0;
+                final archivedStartIndex =
+                    activeHabits.isNotEmpty ? activeHabits.length + 1 : 0;
                 final relativeArchivedIndex = index - archivedStartIndex;
                 if (archivedHabits.isNotEmpty) {
-                  if (relativeArchivedIndex == 0) return const _SectionHeader(text: 'COMPLETED JOURNEYS 🏆', color: Colors.green);
-                  return HabitCard(habit: archivedHabits[relativeArchivedIndex - 1], isArchived: true);
+                  if (relativeArchivedIndex == 0)
+                    return const _SectionHeader(
+                        text: 'COMPLETED JOURNEYS 🏆', color: Colors.green);
+                  return HabitCard(
+                      habit: archivedHabits[relativeArchivedIndex - 1],
+                      isArchived: true);
                 }
                 return const SizedBox.shrink();
               },
@@ -216,7 +238,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEditHabitScreen())),
+        onPressed: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const AddEditHabitScreen())),
         icon: const Icon(Icons.add),
         label: const Text('Add Habit'),
       ),
@@ -233,17 +256,17 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-    child: Text(
-      text,
-      style: TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: 12,
-        color: color ?? Colors.grey,
-        letterSpacing: 1.1,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            color: color ?? Colors.grey,
+            letterSpacing: 1.1,
+          ),
+        ),
+      );
 }
 
 class HabitCard extends StatelessWidget {
@@ -587,8 +610,7 @@ class _ThemeSettingsModal extends ConsumerWidget {
             child: Row(
               children: colors.map((color) {
                 final isSelected = settings.seedColor.value == color.value;
-                final isBright =
-                    ThemeData.estimateBrightnessForColor(color) ==
+                final isBright = ThemeData.estimateBrightnessForColor(color) ==
                     Brightness.light;
 
                 return Padding(
