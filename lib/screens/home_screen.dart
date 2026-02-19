@@ -46,11 +46,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Future<void> _logout() async {
+    // Get the current user's email
+    final userEmail = FirebaseAuth.instance.currentUser?.email ?? 'Unknown';
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Log out'),
-        content: const Text('Are you sure you want to log out?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Are you sure you want to log out?'),
+            const SizedBox(height: 12),
+            Text(
+              'Logged in as: $userEmail',
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -68,12 +86,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     try {
       await FirebaseAuth.instance.signOut();
-      // Firebase auth state listener in your app root should handle
-      // navigation to the login screen automatically.
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout failed: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Logout failed: $e'), backgroundColor: Colors.red),
         );
       }
     }
