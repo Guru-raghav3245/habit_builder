@@ -11,29 +11,35 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
-  // Initialize GoogleSignIn as a class member
-  final GoogleSignIn _googleSignIn = GoogleSignIn(serverClientId: '929412639791-aiuidsi5fokp95i5dq2fnpqbfos9418l.apps.googleusercontent.com');
 
-  @override
-  void initState() {
-    super.initState();
+  // Use the singleton instance (required in v7+)
+  static final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  bool _initialized = false;
+
+  Future<void> _ensureInitialized() async {
+    if (!_initialized) {
+      await _googleSignIn.initialize(
+        serverClientId:
+            '929412639791-aiuidsi5fokp95i5dq2fnpqbfos9418l.apps.googleusercontent.com',
+      );
+      _initialized = true;
+    }
   }
 
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
 
     try {
-      // The 'initialize' method is removed as it is not defined for GoogleSignIn
-      // Standard signIn() handles the flow on Android/iOS
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      await _ensureInitialized();
+
+      final GoogleSignInAccount? googleUser = await _googleSignIn.authenticate();
 
       if (googleUser == null) {
         debugPrint('User cancelled Google sign in');
         return;
       }
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
       if (googleAuth.idToken == null) {
         throw Exception('No idToken received from Google');
@@ -44,10 +50,15 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       await FirebaseAuth.instance.signInWithCredential(credential);
-      // Success is handled by the StreamBuilder in main.dart
+      // StreamBuilder in main.dart will handle navigation
     } on FirebaseAuthException catch (e) {
       debugPrint('FirebaseAuth error: ${e.code} - ${e.message}');
       _showError('Firebase Error: ${e.message ?? "Unknown error"}');
+    } on GoogleSignInException catch (e) {
+      debugPrint(
+          'GoogleSignIn error: code=${e.code.name}, description=${e.description}, details=${e.details}');
+      final errorMsg = e.description ?? e.code.name;
+      _showError('Google Sign In failed: $errorMsg');
     } catch (e) {
       debugPrint('Google sign-in error: $e');
       _showError('Sign in failed: $e');

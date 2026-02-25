@@ -22,7 +22,8 @@ class NotificationService {
 
     tz.initializeTimeZones();
 
-    final String timeZoneName = await FlutterTimezone.getLocalTimezone();
+    final String timeZoneName =
+        (await FlutterTimezone.getLocalTimezone()) as String;
     tz.setLocalLocation(tz.getLocation(timeZoneName));
     print('🔔 [NotificationService] timezone set to: $timeZoneName');
 
@@ -33,7 +34,7 @@ class NotificationService {
       android: android,
     );
 
-    await _notifications.initialize(settings);
+    await _notifications.initialize(settings: settings);
     print('🔔 [NotificationService] notifications.initialize done');
 
     if (Platform.isAndroid) {
@@ -65,6 +66,133 @@ class NotificationService {
       await androidImplementation?.createNotificationChannel(channel);
       print('🔔 [NotificationService] NotificationChannel created');
     }
+  }
+
+  static Future<void> testAlarm() async {
+    print('🔔 [NotificationService] testAlarm() called');
+    await _notifications.show(
+      id: 99999,
+      title: 'Test Alarm',
+      body: 'Sound and notifications are working!',
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          importance: Importance.max,
+          priority: Priority.high,
+          icon: _notificationIcon,
+        ),
+      ),
+    );
+    print('🔔 [NotificationService] testAlarm() notification.show() done');
+  }
+
+  static Future<void> _zonedSchedule(
+    int id,
+    String title,
+    String body,
+    DateTime scheduledTime,
+  ) async {
+    final now = DateTime.now();
+    var finalTime = scheduledTime;
+
+    if (finalTime.isBefore(now)) {
+      finalTime = finalTime.add(const Duration(days: 1));
+      print(
+        '🔔 [NotificationService] _zonedSchedule(id=$id) '
+        'scheduledTime=$scheduledTime is in the past (now=$now) – shifting to next day -> $finalTime',
+      );
+    } else {
+      print(
+        '🔔 [NotificationService] _zonedSchedule(id=$id) '
+        'scheduledTime=$scheduledTime (now=$now)',
+      );
+    }
+
+    const AndroidScheduleMode androidScheduleMode =
+        AndroidScheduleMode.exactAllowWhileIdle;
+
+    final tzScheduledDate = tz.TZDateTime.from(finalTime, tz.local);
+
+    print(
+        '🔔 [NotificationService] Calling plugin.zonedSchedule(id=$id, time=$tzScheduledDate)');
+
+    await _notifications.zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: tzScheduledDate, // ← required named param
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
+          icon: _notificationIcon,
+        ),
+      ),
+      androidScheduleMode: androidScheduleMode,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+
+    print(
+        '🔔 [NotificationService] _zonedSchedule(id=$id) scheduled at $tzScheduledDate');
+  }
+
+  static Future<void> testScheduleNextMinute() async {
+    final now = DateTime.now();
+    final nextMinute = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute + 1,
+    );
+
+    print('🔔 [NotificationService] testScheduleNextMinute at $nextMinute');
+
+    await _zonedSchedule(
+      123456,
+      'Next Minute Test',
+      'This notification was scheduled for the start of the next minute.',
+      nextMinute,
+    );
+  }
+
+  static Future<void> testScheduleInOneMinute() async {
+    final now = DateTime.now();
+    final inOneMinute = now.add(const Duration(minutes: 1));
+    print(
+        '🔔 [NotificationService] testScheduleInOneMinute at (local) $inOneMinute');
+
+    final tzDate = tz.TZDateTime.from(inOneMinute, tz.local);
+
+    await _notifications.zonedSchedule(
+      id: 987654,
+      title: 'Plain Schedule Test',
+      body: 'Testing scheduled notification in 1 minute (exact, one-shot)',
+      scheduledDate: tzDate,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
+          icon: _notificationIcon,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: null,
+    );
+
+    print(
+        '🔔 [NotificationService] testScheduleInOneMinute scheduled at $tzDate');
   }
 
   static Future<void> scheduleDailyReminder(Habit habit) async {
@@ -115,71 +243,13 @@ class NotificationService {
     );
   }
 
-  static Future<void> _zonedSchedule(
-    int id,
-    String title,
-    String body,
-    DateTime scheduledTime,
-  ) async {
-    final now = DateTime.now();
-    var finalTime = scheduledTime;
-
-    if (finalTime.isBefore(now)) {
-      finalTime = finalTime.add(const Duration(days: 1));
-      print(
-        '🔔 [NotificationService] _zonedSchedule(id=$id) '
-        'scheduledTime=$scheduledTime is in the past (now=$now) – shifting to next day -> $finalTime',
-      );
-    } else {
-      print(
-        '🔔 [NotificationService] _zonedSchedule(id=$id) '
-        'scheduledTime=$scheduledTime (now=$now)',
-      );
-    }
-
-    const AndroidScheduleMode androidScheduleMode =
-        AndroidScheduleMode.exactAllowWhileIdle;
-    print(
-        '🔔 [NotificationService] _zonedSchedule(id=$id) using mode=$androidScheduleMode');
-
-    final tzScheduledDate = tz.TZDateTime.from(finalTime, tz.local);
-    print(
-        '🔔 [NotificationService] Calling plugin.zonedSchedule(id=$id, time=$tzScheduledDate)');
-
-    await _notifications.zonedSchedule(
-      id,
-      title,
-      body,
-      tzScheduledDate,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: _channelDescription,
-          importance: Importance.max,
-          priority: Priority.high,
-          playSound: true,
-          enableVibration: true,
-          icon: _notificationIcon,
-        ),
-      ),
-      androidScheduleMode: androidScheduleMode,
-      matchDateTimeComponents: DateTimeComponents.time,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
-
-    print(
-        '🔔 [NotificationService] _zonedSchedule(id=$id) scheduled at $tzScheduledDate');
-  }
-
   static Future<void> cancelAllHabitReminders(String habitId) async {
     final int baseId = habitId.hashCode;
     print(
         '🔔 [NotificationService] cancelAllHabitReminders for habitId=$habitId (baseId=$baseId)');
-    await _notifications.cancel(baseId);
-    await _notifications.cancel(baseId + 1);
-    await _notifications.cancel(baseId + 2);
+    await _notifications.cancel(id: baseId);
+    await _notifications.cancel(id: baseId + 1);
+    await _notifications.cancel(id: baseId + 2);
   }
 
   static Future<void> cancelLateReminder(String habitId) async {
@@ -187,84 +257,6 @@ class NotificationService {
     final int lateId = baseId + 2;
     print(
         '🔔 [NotificationService] cancelLateReminder for habitId=$habitId (id=$lateId)');
-    await _notifications.cancel(lateId);
-  }
-
-  static Future<void> testAlarm() async {
-    print('🔔 [NotificationService] testAlarm() called');
-    await _notifications.show(
-      999,
-      'Test Alarm',
-      'Sound and notifications are working!',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          importance: Importance.max,
-          priority: Priority.high,
-          icon: _notificationIcon,
-        ),
-      ),
-    );
-    print('🔔 [NotificationService] testAlarm() notification.show() done');
-  }
-
-// Add this method inside the NotificationService class in lib/services/notification_service.dart
-
-  static Future<void> testScheduleNextMinute() async {
-    final now = DateTime.now();
-    // Set the time to the 00 second mark of the next minute
-    final nextMinute = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      now.hour,
-      now.minute + 1,
-    );
-
-    print('🔔 [NotificationService] testScheduleNextMinute at $nextMinute');
-
-    // Uses the existing _zonedSchedule function to handle timezone logic
-    await _zonedSchedule(
-      123456, // Unique ID for this test
-      'Next Minute Test',
-      'This notification was scheduled for the start of the next minute.',
-      nextMinute,
-    );
-  }
-
-  static Future<void> testScheduleInOneMinute() async {
-    final now = DateTime.now();
-    final inOneMinute = now.add(const Duration(minutes: 1));
-    print(
-        '🔔 [NotificationService] testScheduleInOneMinute at (local) $inOneMinute');
-
-    final tzDate = tz.TZDateTime.from(inOneMinute, tz.local);
-    print('🔔 [NotificationService] testScheduleInOneMinute tzDate=$tzDate');
-
-    await _notifications.zonedSchedule(
-        987654,
-        'Plain Schedule Test',
-        'Testing scheduled notification in 1 minute (exact, one-shot)',
-        tzDate,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            _channelId,
-            _channelName,
-            channelDescription: _channelDescription,
-            importance: Importance.max,
-            priority: Priority.high,
-            playSound: true,
-            enableVibration: true,
-            icon: _notificationIcon,
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        matchDateTimeComponents: null,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime);
-
-    print(
-        '🔔 [NotificationService] testScheduleInOneMinute scheduled at $tzDate');
+    await _notifications.cancel(id: lateId);
   }
 }

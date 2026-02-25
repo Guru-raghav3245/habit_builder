@@ -1,6 +1,5 @@
-package com.guru.habitit
+package com.example.habitit
 
 import io.flutter.embedding.android.FlutterActivity
 
-class MainActivity: FlutterActivity() {
-}
+class MainActivity : FlutterActivity()

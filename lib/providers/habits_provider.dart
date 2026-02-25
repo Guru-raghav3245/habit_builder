@@ -1,9 +1,10 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:habitit/models/habit.dart';
 import 'package:habitit/services/habit_storage.dart';
 import 'package:habitit/services/notification_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class HabitsState {
   final AsyncValue<List<Habit>> habits;
