@@ -10,6 +10,8 @@ import 'package:habitit/screens/detail_screen.dart';
 import 'package:habitit/screens/focus_timer_screen.dart';
 import 'package:habitit/services/notification_service.dart';
 import 'package:habitit/models/habit.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -49,14 +51,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // Show a styled bottom sheet instead of a basic dialog
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      backgroundColor: Colors.transparent, // Allows for custom rounded corners
+      backgroundColor: Colors.transparent,
       builder: (context) => const _LogoutModal(),
     );
 
     if (confirmed != true) return;
 
     try {
+      // Sign out from BOTH services
       await FirebaseAuth.instance.signOut();
+      await GoogleSignIn.instance.signOut(); // ← This clears the cached account
+      await GoogleSignIn.instance
+          .disconnect(); // ← Forces full account picker next time
+
+      // Navigation back to login is handled by your StreamBuilder in main.dart
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -102,12 +110,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       final todayEnd = todayStart.add(Duration(minutes: habit.durationMinutes));
 
       if (todayStart.isAfter(now)) {
-        if (nextEventTime == null || todayStart.isBefore(nextEventTime))
+        if (nextEventTime == null || todayStart.isBefore(nextEventTime)) {
           nextEventTime = todayStart;
+        }
       }
       if (now.isAfter(todayStart) && now.isBefore(todayEnd)) {
-        if (nextEventTime == null || todayEnd.isBefore(nextEventTime))
+        if (nextEventTime == null || todayEnd.isBefore(nextEventTime)) {
           nextEventTime = todayEnd;
+        }
       }
     }
 
@@ -212,8 +222,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('Error: $error')),
           data: (habits) {
-            if (habits.isEmpty)
+            if (habits.isEmpty) {
               return const Center(child: Text('No habits yet.'));
+            }
             final activeHabits = habits.where((h) => !h.isArchived).toList();
             final archivedHabits = habits.where((h) => h.isArchived).toList();
 
@@ -225,8 +236,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   (archivedHabits.isNotEmpty ? archivedHabits.length + 1 : 0),
               itemBuilder: (context, index) {
                 if (activeHabits.isNotEmpty) {
-                  if (index == 0)
+                  if (index == 0) {
                     return const _SectionHeader(text: 'ACTIVE CHALLENGES');
+                  }
                   if (index <= activeHabits.length) {
                     final habit = activeHabits[index - 1];
                     return HabitCard(
@@ -239,9 +251,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     activeHabits.isNotEmpty ? activeHabits.length + 1 : 0;
                 final relativeArchivedIndex = index - archivedStartIndex;
                 if (archivedHabits.isNotEmpty) {
-                  if (relativeArchivedIndex == 0)
+                  if (relativeArchivedIndex == 0) {
                     return const _SectionHeader(
                         text: 'COMPLETED JOURNEYS 🏆', color: Colors.green);
+                  }
                   return HabitCard(
                       habit: archivedHabits[relativeArchivedIndex - 1],
                       isArchived: true);
@@ -525,7 +538,7 @@ class _LogoutModal extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Drag handle for UI polish
+          // Drag handle
           Container(
             width: 40,
             height: 4,
@@ -561,7 +574,7 @@ class _LogoutModal extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -580,7 +593,10 @@ class _LogoutModal extends StatelessWidget {
               ],
             ),
           ),
+
           const SizedBox(height: 32),
+
+          // Buttons
           Row(
             children: [
               Expanded(
@@ -612,6 +628,25 @@ class _LogoutModal extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+
+          // ←←← NEW: App version
+          const SizedBox(height: 24),
+          FutureBuilder<PackageInfo>(
+            future: PackageInfo.fromPlatform(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                final info = snapshot.data!;
+                return Text(
+                  'Version ${info.version} (build ${info.buildNumber})',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                );
+              }
+              return const SizedBox.shrink(); // nothing while loading
+            },
           ),
         ],
       ),
