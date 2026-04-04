@@ -43,10 +43,12 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     super.initState();
     final habit = widget.habitToEdit;
     _nameController = TextEditingController(text: habit?.name ?? '');
-    _goalDaysController = TextEditingController(text: habit?.targetDays.toString() ?? '30');
+    _goalDaysController =
+        TextEditingController(text: habit?.targetDays.toString() ?? '30');
 
     final initialTime = habit?.startTime ?? const TimeOfDay(hour: 9, minute: 0);
-    int displayHour = initialTime.hourOfPeriod == 0 ? 12 : initialTime.hourOfPeriod;
+    int displayHour =
+        initialTime.hourOfPeriod == 0 ? 12 : initialTime.hourOfPeriod;
     String displayPeriod = initialTime.period == DayPeriod.am ? "AM" : "PM";
 
     _hourNotifier = ValueNotifier<int>(displayHour);
@@ -58,9 +60,12 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     _isDurationExpanded = false;
 
     _hourController = FixedExtentScrollController(initialItem: displayHour - 1);
-    _minController = FixedExtentScrollController(initialItem: initialTime.minute);
-    _periodController = FixedExtentScrollController(initialItem: displayPeriod == "AM" ? 0 : 1);
-    _durationController = FixedExtentScrollController(initialItem: _durationNotifier.value - 1);
+    _minController =
+        FixedExtentScrollController(initialItem: initialTime.minute);
+    _periodController =
+        FixedExtentScrollController(initialItem: displayPeriod == "AM" ? 0 : 1);
+    _durationController =
+        FixedExtentScrollController(initialItem: _durationNotifier.value - 1);
   }
 
   @override
@@ -99,13 +104,16 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     final newEndMins = newStartMins + _durationNotifier.value;
 
     for (final habit in existingHabits) {
-      if (widget.habitToEdit != null && habit.id == widget.habitToEdit!.id) continue;
+      if (widget.habitToEdit != null && habit.id == widget.habitToEdit!.id)
+        continue;
       if (habit.isArchived) continue;
       final hStartMins = getStartMinutes(habit.startTime);
       final hEndMins = hStartMins + habit.durationMinutes;
       if (newStartMins < hEndMins && newEndMins > hStartMins) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Time conflict! Overlaps with "${habit.name}"'), backgroundColor: Colors.redAccent));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Time conflict! Overlaps with "${habit.name}"'),
+              backgroundColor: Colors.redAccent));
         }
         return;
       }
@@ -114,16 +122,79 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
     try {
       final notifier = ref.read(habitsProvider.notifier);
       if (widget.habitToEdit == null) {
-        await notifier.addHabit(name: _nameController.text.trim(), startTime: selectedTime, durationMinutes: _durationNotifier.value, targetDays: goalDays);
+        await notifier.addHabit(
+            name: _nameController.text.trim(),
+            startTime: selectedTime,
+            durationMinutes: _durationNotifier.value,
+            targetDays: goalDays);
       } else {
-        await notifier.updateHabit(widget.habitToEdit!.copyWith(name: _nameController.text.trim(), startTime: selectedTime, durationMinutes: _durationNotifier.value, targetDays: goalDays));
+        await notifier.updateHabit(widget.habitToEdit!.copyWith(
+            name: _nameController.text.trim(),
+            startTime: selectedTime,
+            durationMinutes: _durationNotifier.value,
+            targetDays: goalDays));
       }
       if (mounted) {
         if (!widget.isEmbedded) Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Habit saved successfully'), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Habit saved successfully'),
+            backgroundColor: Colors.green));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error saving habit')));
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Error saving habit')));
+    }
+  }
+
+  Future<void> _deleteHabit() async {
+    if (widget.habitToEdit == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          title: const Text('Delete Habit'),
+          content: Text(
+              'Are you sure you want to delete "${widget.habitToEdit!.name}"? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.error),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      try {
+        await ref
+            .read(habitsProvider.notifier)
+            .deleteHabit(widget.habitToEdit!.id);
+        if (mounted) {
+          Navigator.of(context).pop(); // Go back to the previous screen (Home)
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Habit deleted'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error deleting habit')),
+          );
+        }
+      }
     }
   }
 
@@ -136,11 +207,27 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         key: _formKey,
         child: Column(
           children: [
-            _buildCardWrapper(context: context, title: 'General Information', children: [
-              _buildTextField(context: context, controller: _nameController, label: 'Habit Name', hint: 'e.g., Yoga', icon: Icons.edit_note_rounded, validator: (v) => v?.isEmpty ?? true ? 'Enter a name' : null),
-              const SizedBox(height: 20),
-              _buildTextField(context: context, controller: _goalDaysController, label: 'Duration (Days)', hint: '30', icon: Icons.flag_rounded, keyboardType: TextInputType.number),
-            ]),
+            _buildCardWrapper(
+                context: context,
+                title: 'General Information',
+                children: [
+                  _buildTextField(
+                      context: context,
+                      controller: _nameController,
+                      label: 'Habit Name',
+                      hint: 'e.g., Yoga',
+                      icon: Icons.edit_note_rounded,
+                      validator: (v) =>
+                          v?.isEmpty ?? true ? 'Enter a name' : null),
+                  const SizedBox(height: 20),
+                  _buildTextField(
+                      context: context,
+                      controller: _goalDaysController,
+                      label: 'Duration (Days)',
+                      hint: '30',
+                      icon: Icons.flag_rounded,
+                      keyboardType: TextInputType.number),
+                ]),
             const SizedBox(height: 24),
             _buildCardWrapper(context: context, title: 'Schedule', children: [
               _buildExpandablePicker(
@@ -148,17 +235,22 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                 label: 'Start Time',
                 icon: Icons.access_time_filled_rounded,
                 isExpanded: _isTimeExpanded,
-                onToggle: () => setState(() { _isTimeExpanded = !_isTimeExpanded; _isDurationExpanded = false; }),
+                onToggle: () => setState(() {
+                  _isTimeExpanded = !_isTimeExpanded;
+                  _isDurationExpanded = false;
+                }),
                 headerValue: ValueListenableBuilder(
                   valueListenable: _hourNotifier,
-                  // Renamed nested unused parameters to avoid duplicates
                   builder: (__, h, ___) => ValueListenableBuilder(
                     valueListenable: _minNotifier,
                     builder: (____, m, _____) => ValueListenableBuilder(
                       valueListenable: _periodNotifier,
                       builder: (______, p, _______) => Text(
                         '$h:${m.toString().padLeft(2, '0')} $p',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: colorScheme.primary),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: colorScheme.primary),
                       ),
                     ),
                   ),
@@ -171,25 +263,60 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                 label: 'Focus Session',
                 icon: Icons.timer_rounded,
                 isExpanded: _isDurationExpanded,
-                onToggle: () => setState(() { _isDurationExpanded = !_isDurationExpanded; _isTimeExpanded = false; }),
+                onToggle: () => setState(() {
+                  _isDurationExpanded = !_isDurationExpanded;
+                  _isTimeExpanded = false;
+                }),
                 headerValue: ValueListenableBuilder(
                   valueListenable: _durationNotifier,
-                  builder: (__, d, ___) => Text('$d minutes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: colorScheme.primary)),
+                  builder: (__, d, ___) => Text('$d minutes',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: colorScheme.primary)),
                 ),
                 expandedChild: _buildDurationWheelPicker(context),
               ),
             ]),
             const SizedBox(height: 32),
-            ElevatedButton(onPressed: _saveHabit, style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary, foregroundColor: colorScheme.onPrimary, minimumSize: const Size(double.infinity, 56)), child: Text(widget.habitToEdit == null ? 'Create Habit' : 'Save Changes')),
-            // Delete logic as is...
+            ElevatedButton(
+                onPressed: _saveHabit,
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    minimumSize: const Size(double.infinity, 56)),
+                child: Text(widget.habitToEdit == null
+                    ? 'Create Habit'
+                    : 'Save Changes')),
+            if (widget.habitToEdit != null) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _deleteHabit,
+                icon: const Icon(Icons.delete_outline_rounded),
+                label: const Text('Delete Habit'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: colorScheme.error,
+                  side: BorderSide(color: colorScheme.error.withOpacity(0.5)),
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
-    return widget.isEmbedded ? content : Scaffold(appBar: AppBar(title: Text(widget.habitToEdit == null ? 'New Habit' : 'Edit Habit')), body: content);
+    return widget.isEmbedded
+        ? content
+        : Scaffold(
+            appBar: AppBar(
+                title: Text(
+                    widget.habitToEdit == null ? 'New Habit' : 'Edit Habit')),
+            body: content);
   }
 
-  // Keep helper methods (_buildCardWrapper, _buildTextField, _buildExpandablePicker, etc.) exactly as they were...
   Widget _buildCardWrapper({
     required BuildContext context,
     required String title,
@@ -352,10 +479,14 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
             '',
             pad: true,
           ),
-          _wheelColumnStrings(context, _periodController, [
-            "AM",
-            "PM",
-          ], _periodNotifier),
+          _wheelColumnStrings(
+              context,
+              _periodController,
+              [
+                "AM",
+                "PM",
+              ],
+              _periodNotifier),
         ],
       ),
     );

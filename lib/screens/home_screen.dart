@@ -38,6 +38,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Future<void> _initNotifications() async {
     await NotificationService.init();
+
+    // Add this safety check before using 'ref'
+    if (!mounted) return;
+
     final habitsState = ref.read(habitsProvider);
     final habits = habitsState.habits.asData?.value ?? [];
     for (final habit in habits) {

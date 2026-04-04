@@ -96,11 +96,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 'Welcome to HabitIt',
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                'Sign in to sync your habits',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
               const SizedBox(height: 48),
               if (_isLoading)
                 const CircularProgressIndicator()
